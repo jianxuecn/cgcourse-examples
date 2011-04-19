@@ -38,8 +38,6 @@ GLuint g_pick_buffer[PICK_BUFFER_SIZE];
 GLdouble g_pick_size = 10.0;
 int g_curcpt = -1;
 
-//GLUquadric *g_qobj = 0;
-
 bool g_left_button_down = false;
 bool g_middle_button_down = false;
 bool g_right_button_down = false;
@@ -434,13 +432,7 @@ int main(int argc, char *argv[])
 	glHint(GL_LINE_SMOOTH_HINT,GL_NICEST);
 	glHint(GL_POLYGON_SMOOTH_HINT,GL_NICEST);
 
-	//g_qobj = gluNewQuadric();
-	//gluQuadricDrawStyle(g_qobj, GLU_FILL);
-	//gluQuadricNormals(g_qobj, GLU_SMOOTH);
-
 	glutMainLoop();
-
-	//gluDeleteQuadric(g_qobj);
 
 	return 0;
 }

@@ -25,7 +25,7 @@ include_directories(
 
 add_custom_target(copy_data ${CMAKE_COMMAND} -E copy_directory ${cg_examples_SOURCE_DIR}/data ${cg_examples_BINARY_DIR}/data)
 
-install(DIRECTORY data/ DESTINATION data)
+install(DIRECTORY data/ DESTINATION data PATTERN ".svn" EXCLUDE)
 
 function(add_example EXAMPLE_NAME)
   set(LIBRARIES ${GLUT_glut_LIBRARY} ${OPENGL_LIBRARIES})
@@ -46,6 +46,7 @@ add_example(curves)
 add_example(nurbscurve)
 
 if(FREEIMAGE_FOUND)
+  add_example(texture2d ${FREEIMAGE_LIBRARIES})
   add_example(mirror ${FREEIMAGE_LIBRARIES})
 endif(FREEIMAGE_FOUND)
 

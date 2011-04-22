@@ -26,6 +26,7 @@ include_directories(
 add_custom_target(copy_data ${CMAKE_COMMAND} -E copy_directory ${cg_examples_SOURCE_DIR}/data ${cg_examples_BINARY_DIR}/data)
 
 install(DIRECTORY data/ DESTINATION data PATTERN ".svn" EXCLUDE)
+install(DIRECTORY src/shaders/ DESTINATION shaders PATTERN ".svn" EXCLUDE)
 
 function(add_example EXAMPLE_NAME)
   set(LIBRARIES ${GLUT_glut_LIBRARY} ${OPENGL_LIBRARIES})
@@ -56,3 +57,10 @@ if(MITK_FOUND)
   add_example(spheremap ${MITK_LIBRARIES})
   add_example(dyncubemap ${MITK_LIBRARIES})
 endif(MITK_FOUND)
+
+if(GLEW_FOUND)
+  configure_file(src/shaders/phong.vert ${cg_examples_BINARY_DIR}/shaders/phong.vert COPYONLY)
+  configure_file(src/shaders/phong.frag ${cg_examples_BINARY_DIR}/shaders/phong.frag COPYONLY)
+  add_example(phongshader ${GLEW_GLEW_LIBRARY})
+endif(GLEW_FOUND)
+

@@ -46,6 +46,8 @@ add_example(sphere)
 add_example(curves)
 add_example(nurbscurve)
 add_example(surface)
+add_example(gravity)
+add_example(gravity2)
 
 if(FREEIMAGE_FOUND)
   add_example(texture2d ${FREEIMAGE_LIBRARIES})

@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <GL/glut.h>
 #include <vector>
 #include "matrix.h"
@@ -167,8 +168,8 @@ void gen_sphere(int n)
 	divide_triangle(v[0], v[3], v[1], n);
 	divide_triangle(v[0], v[2], v[3], n);
 
-	printf("Triangles: %d\n", g_verts.size()/3);
-	printf("Vertices: %d\n", g_verts.size());
+	printf("Triangles: %u\n", g_verts.size()/3);
+	printf("Vertices: %u\n", g_verts.size());
 }
 
 void gen_triangle_flat_2(unsigned int ia, unsigned int ib, unsigned int ic)
@@ -293,8 +294,8 @@ void gen_sphere_2(int n)
 	divide_triangle_2(0, 2, 3, n);
 
 	printf("Recursion Depth: %d\n", g_n);
-	printf("Triangles: %d\n", g_faces.size());
-	printf("Vertices: %d\n", g_verts.size());
+	printf("Triangles: %u\n", g_faces.size());
+	printf("Vertices: %u\n", g_verts.size());
 }
 
 

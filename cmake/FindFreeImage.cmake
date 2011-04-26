@@ -28,7 +28,8 @@ ELSE (WIN32)
       /opt/graphics/OpenGL/contrib/libglut
       )
   
-    FIND_LIBRARY( FREEIMAGE_FreeImage_LIBRARY FreeImage
+    FIND_LIBRARY( FREEIMAGE_FreeImage_LIBRARY NAMES FreeImage freeimage
+      /usr/lib
       /usr/openwin/lib
       )
      

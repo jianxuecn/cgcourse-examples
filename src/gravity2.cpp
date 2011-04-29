@@ -211,7 +211,7 @@ void init_grids()
 void init_balls()
 {
     srand((unsigned int)(time(0)));
-    value_type space = 0.2;
+    value_type space = 0.25;
     value_type bias = 0.01;
     unsigned int num = (unsigned int)(WALL_SIZE / (RADIUS_MAX+space));
     for (unsigned int i=0; i<num; ++i) {

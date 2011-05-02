@@ -299,7 +299,7 @@ void keyboard(unsigned char key, int x, int y)
     }
 }
 
-void main(int argc, char** argv)
+int main(int argc, char** argv)
 {
     g_max_iterations = 80;		// max # of iterations to determine if in set
     g_is_zoomed = false;			// flag denoting whether user has zoomed
@@ -353,5 +353,7 @@ void main(int argc, char** argv)
     glutDisplayFunc(display);		// register display function
     glutMouseFunc(mouse);				// registry mouse function
     glutMainLoop();
+
+    return 0;
 }
 

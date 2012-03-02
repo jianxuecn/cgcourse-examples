@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <GL/glut.h>
 #include <GL/glext.h>
+#include <iostream>
 
 #include "trackball.h"
 #include "quaternion.h"
@@ -157,21 +158,21 @@ bool is_extension_supported(const char *extension)
 
 bool init_extfuncs()
 {
-    if (!is_extension_supported("GL_ARB_framebuffer_object")) return false;
+    if (!is_extension_supported("GL_EXT_framebuffer_object")) return false;
 
-    glGenFramebuffers = (PFNGLGENFRAMEBUFFERSPROC) wglGetProcAddress("glGenFramebuffers");
-    glBindFramebuffer = (PFNGLBINDFRAMEBUFFERPROC) wglGetProcAddress("glBindFramebuffer");
-    glDeleteFramebuffers = (PFNGLDELETEFRAMEBUFFERSPROC) wglGetProcAddress("glDeleteFramebuffers");
-    glFramebufferRenderbuffer = (PFNGLFRAMEBUFFERRENDERBUFFERPROC) wglGetProcAddress("glFramebufferRenderbuffer");
-    glFramebufferTexture2D = (PFNGLFRAMEBUFFERTEXTURE2DPROC) wglGetProcAddress("glFramebufferTexture2D");
-    glCheckFramebufferStatus = (PFNGLCHECKFRAMEBUFFERSTATUSPROC) wglGetProcAddress("glCheckFramebufferStatus");
+    glGenFramebuffers = (PFNGLGENFRAMEBUFFERSEXTPROC) wglGetProcAddress("glGenFramebuffersEXT");
+    glBindFramebuffer = (PFNGLBINDFRAMEBUFFEREXTPROC) wglGetProcAddress("glBindFramebufferEXT");
+    glDeleteFramebuffers = (PFNGLDELETEFRAMEBUFFERSPROC) wglGetProcAddress("glDeleteFramebuffersEXT");
+    glFramebufferRenderbuffer = (PFNGLFRAMEBUFFERRENDERBUFFERPROC) wglGetProcAddress("glFramebufferRenderbufferEXT");
+    glFramebufferTexture2D = (PFNGLFRAMEBUFFERTEXTURE2DPROC) wglGetProcAddress("glFramebufferTexture2DEXT");
+    glCheckFramebufferStatus = (PFNGLCHECKFRAMEBUFFERSTATUSPROC) wglGetProcAddress("glCheckFramebufferStatusEXT");
 
-    glGenRenderbuffers = (PFNGLGENRENDERBUFFERSPROC) wglGetProcAddress("glGenRenderbuffers");
-    glBindRenderbuffer = (PFNGLBINDRENDERBUFFERPROC) wglGetProcAddress("glBindRenderbuffer");
-    glDeleteRenderbuffers = (PFNGLDELETERENDERBUFFERSPROC) wglGetProcAddress("glDeleteRenderbuffers");
-    glRenderbufferStorage = (PFNGLRENDERBUFFERSTORAGEPROC) wglGetProcAddress("glRenderbufferStorage");
+    glGenRenderbuffers = (PFNGLGENRENDERBUFFERSPROC) wglGetProcAddress("glGenRenderbuffersEXT");
+    glBindRenderbuffer = (PFNGLBINDRENDERBUFFERPROC) wglGetProcAddress("glBindRenderbufferEXT");
+    glDeleteRenderbuffers = (PFNGLDELETERENDERBUFFERSPROC) wglGetProcAddress("glDeleteRenderbuffersEXT");
+    glRenderbufferStorage = (PFNGLRENDERBUFFERSTORAGEPROC) wglGetProcAddress("glRenderbufferStorageEXT");
 
-    glGenerateMipmap = (PFNGLGENERATEMIPMAPPROC) wglGetProcAddress("glGenerateMipmap");
+    glGenerateMipmap = (PFNGLGENERATEMIPMAPPROC) wglGetProcAddress("glGenerateMipmapEXT");
 
 
     if (   glGenFramebuffers==0
@@ -186,6 +187,17 @@ bool init_extfuncs()
         || glRenderbufferStorage==0
         || glGenerateMipmap==0)
     {
+        std::cout << "glGenFramebuffers:        " << glGenFramebuffers << std::endl
+                  << "glBindFramebuffer:        " << glBindFramebuffer << std::endl
+                  << "glDeleteFramebuffers      " << glDeleteFramebuffers << std::endl
+                  << "glFramebufferRenderbuffer " << glFramebufferRenderbuffer << std::endl
+                  << "glFramebufferTexture2D:   " << glFramebufferTexture2D << std::endl
+                  << "glCheckFramebufferStatus: " << glCheckFramebufferStatus << std::endl
+                  << "glGenRenderbuffers:       " << glGenRenderbuffers << std::endl
+                  << "glBindRenderbuffer:       " << glBindRenderbuffer << std::endl
+                  << "glDeleteRenderbuffers:    " << glDeleteRenderbuffers << std::endl
+                  << "glRenderbufferStorage:    " << glRenderbufferStorage << std::endl
+                  << "glGenerateMipmap:         " << glGenerateMipmap << std::endl;
         return false;
     }
 
@@ -422,14 +434,34 @@ bool load_model(char const *filename)
 bool init()
 {
 
-	if (!load_model("data/dyncubemap/bunny.ply")) return false;
-	if (!load_textures()) return false;
+    if (!load_model("data/dyncubemap/bunny.ply")) {
+        std::cout << "init: failed to load model file!" << std::endl;
+        return false;
+    }
 
-	if (!load_cube_map_bg_textures()) return false;
-	if (!load_cube_map_textures()) return false;
+    if (!load_textures()) {
+        std::cout << "init: failed to load textures!" << std::endl;
+        return false;
+    }
 
-    if (!init_extfuncs()) return false;
-    if (!init_fbo()) return false;
+    if (!load_cube_map_bg_textures()) {
+        std::cout << "init: failed to load cube map bg textures!" << std::endl;
+        return false;
+    }
+
+    if (!load_cube_map_textures()) {
+        std::cout << "init: failed to load cube map textures!" << std::endl;
+        return false;
+    }
+
+    if (!init_extfuncs()) {
+        std::cout << "init: failed to initialize ext functions!" << std::endl;
+        return false;
+    }
+    if (!init_fbo()) {
+        std::cout << "init: failed to initialize frame buffer object!" << std::endl;
+        return false;
+    }
 
 	update_texgen();
 	update_wrap();

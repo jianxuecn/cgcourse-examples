@@ -54,6 +54,7 @@ add_example(mandelsimp)
 if(FREEIMAGE_FOUND)
   add_example(texture2d ${FREEIMAGE_LIBRARIES})
   add_example(mirror ${FREEIMAGE_LIBRARIES})
+  add_example(planet ${FREEIMAGE_LIBRARIES})
 endif(FREEIMAGE_FOUND)
 
 if(MITK_FOUND)

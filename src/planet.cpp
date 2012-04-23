@@ -21,8 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <GL/glut.h>
-#include <GL/glext.h>
+#include "glinc.h"
 #include "FreeImage.h"
 #include "trackball.h"
 #include "quaternion.h"
@@ -40,6 +39,7 @@ bool g_left_button_down = false;
 bool g_middle_button_down = false;
 bool g_right_button_down = false;
 
+float g_spin_angle = 0.01f;
 
 GLuint g_texture_id;
 
@@ -182,7 +182,7 @@ bool init()
     g_dr.AxisRadToQuat(ax[0], ax[1], ax[2], angle);
     g_trackball.Update(g_dr);
     g_trackball.BuildRotMatrix(g_rotm);
-    g_dr.AxisDegToQuat(vv[0], vv[1], vv[2], 1.0f);
+    g_dr.AxisDegToQuat(vv[0], vv[1], vv[2], g_spin_angle);
 
     return true;										// Initialization Went OK
 }
@@ -306,7 +306,7 @@ void motion(int x, int y)
         if (g_rotate) {
             Vectorf ax(0, 0, 1, 0);
             ax *= g_rotm;
-            g_dr.AxisDegToQuat(ax[0], ax[1], ax[2], 1.0f);
+            g_dr.AxisDegToQuat(ax[0], ax[1], ax[2], g_spin_angle);
         }
 
         glutPostRedisplay();

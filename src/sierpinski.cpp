@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <stdlib.h>
 #include <time.h>
-#include <GL/glut.h>
+#include "glinc.h"
 #include "geotypes.h"
 
 void display()

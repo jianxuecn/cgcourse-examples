@@ -16,6 +16,8 @@ ELSE (WIN32)
     # These values for Apple could probably do with improvement.
     FIND_PATH( FREEIMAGE_INCLUDE_DIR FreeImage.h
       /System/Library/Frameworks/FreeImage.framework/Versions/A/Headers
+      /usr/include
+      /usr/local/include
       )
     SET(FREEIMAGE_FreeImage_LIBRARY "-framework FreeImage" CACHE STRING "FreeImage library for OSX") 
   ELSE (APPLE)

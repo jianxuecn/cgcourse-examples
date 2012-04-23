@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -----------------------------------------------------------------------
 */
 
-#include <GL/glut.h>
 #include <stdio.h>
+#include "glinc.h"
 #include "trackball.h"
 #include "quaternion.h"
 #include "camera.h"
@@ -78,9 +78,11 @@ void initlights()
 	//glLightModeli(GL_LIGHT_MODEL_TWO_SIDE,GL_TRUE);
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
-	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
-	glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-	glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_diffuse);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat_specular);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, mat_shininess);
+    
+    //glLightModeli(GL_LIGHT_MODEL_TWO_SIDE,GL_FALSE);
 }
 
 void draw_scene(GLenum mode)
@@ -117,7 +119,7 @@ void draw_scene(GLenum mode)
 	}
 
 	glPopMatrix();
-	glFlush();
+	//glFlush();
 }
 
 /*
@@ -196,6 +198,8 @@ void display()
 	//g_cam.LookAt(0.0f, 0.0f, 10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
 
 	draw_scene(GL_RENDER);
+    
+    glutSwapBuffers();
 }
 
 void init()
@@ -328,7 +332,7 @@ void mouse(int button, int state, int x, int y)
 int main(int argc, char *argv[])
 {
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_RGBA);
+	glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE);
 	glutInitWindowPosition(100, 100);
 	glutInitWindowSize(512, 512); 
 	glutCreateWindow("Lighted and Filled Bezier Surface"); 

@@ -21,10 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <GL/glut.h>
 #include <vector>
 #include <time.h>
 
+#include "glinc.h"
 #include "trackball.h"
 #include "quaternion.h"
 #include "camera.h"
@@ -799,7 +799,7 @@ void mouse(int button, int state, int x, int y)
 int main(int argc, char *argv[])
 {
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_MULTISAMPLE);
     glutInitWindowSize(512,512);
     glutCreateWindow("Gravity");
 

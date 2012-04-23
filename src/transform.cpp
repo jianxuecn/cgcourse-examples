@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -----------------------------------------------------------------------
 */
 
-#include <GL/freeglut.h>
+#include "glinc.h"
 #include "trackball.h"
 #include "quaternion.h"
 #include "camera.h"
@@ -144,6 +144,8 @@ void init()
     g_qobj = gluNewQuadric();
     gluQuadricDrawStyle(g_qobj, GLU_FILL);
     gluQuadricNormals(g_qobj, GLU_SMOOTH);
+    
+    glEnable(GL_MULTISAMPLE);
 }
 
 void clear()
@@ -348,7 +350,8 @@ int main(int argc, char **argv)
     g_qobj = 0;
 
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
+	//glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
+    glutInitDisplayString("double rgb depth samples=16");
 	glutInitWindowSize(512,512);
 	glutCreateWindow("Transform");
 	init();

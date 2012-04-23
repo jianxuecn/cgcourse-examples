@@ -21,8 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <GL/glut.h>
-#include <GL/glext.h>
+#include "glinc.h"
 #include "FreeImage.h"
 
 int const MAX_TEXTURES = 3;
@@ -34,8 +33,8 @@ GLuint g_texture_id[MAX_TEXTURES];
 
 float g_xrot = 30.0f;
 float g_yrot = 30.0f;
-float g_xspeed = 1.0f;			// X Rotation Speed
-float g_yspeed = 1.0f;			// Y Rotation Speed
+float g_xspeed = 0.0f;			// X Rotation Speed
+float g_yspeed = 0.0f;			// Y Rotation Speed
 float g_z=-6.0f;		// Depth Into The Screen
 
 int g_window_width = 512;

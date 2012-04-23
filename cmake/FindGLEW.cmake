@@ -45,9 +45,10 @@ ELSE (WIN32)
     FIND_PATH( GLEW_INCLUDE_DIR glew.h
       /System/Library/Frameworks/GLEW.framework/Versions/A/Headers
       ${OPENGL_LIBRARY_DIR}
+      /usr/local/include/GL
     )
     SET(GLEW_GLEW_LIBRARY "-framework GLEW" CACHE STRING "GLEW library for OSX")
-    SET(GLEW_cocoa_LIBRARY "-framework Cocoa" CACHE STRING "Cocoa framework for OSX")
+    #SET(GLEW_cocoa_LIBRARY "-framework Cocoa" CACHE STRING "Cocoa framework for OSX")
   ELSE (APPLE)
 
     FIND_PATH( GLEW_INCLUDE_DIR GL/glew.h
@@ -76,7 +77,7 @@ IF(GLEW_INCLUDE_DIR)
     # If not, we need some way to figure out what platform we are on.
     SET( GLEW_LIBRARIES
       ${GLEW_GLEW_LIBRARY}
-      ${GLEW_cocoa_LIBRARY}
+      #${GLEW_cocoa_LIBRARY}
     )
     SET( GLEW_FOUND "YES" )
 

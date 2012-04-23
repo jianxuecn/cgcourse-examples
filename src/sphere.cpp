@@ -21,8 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <GL/glut.h>
 #include <vector>
+#include "glinc.h"
 #include "matrix.h"
 #include "geotypes.h"
 #include "trackball.h"
@@ -40,7 +40,7 @@ GLfloat g_light_diffuse[]  = { 1.0f, 1.0f, 1.0f, 1.0f };
 GLfloat g_light_position[] = { -3.5f, 1.5f, 2.5f, 1.0f };
 GLfloat g_light_direction[] = { 3.5f, -1.5f, -2.5f, 0.0f };
 GLfloat g_light_rot = 0.0f;
-GLfloat g_light_rot_speed = 1.0f;
+GLfloat g_light_rot_speed = 0.2f;
 
 GLfloat g_material_ambient[]  = { 1.0f, 0.57f, 0.04f, 1.0f };
 GLfloat g_material_diffuse[]  = { 1.0f, 0.57f, 0.04f, 1.0f };
@@ -67,7 +67,7 @@ float g_z = 5.0f;
 float const Z_STEP = 0.1f;
 
 GLint g_viewport[4];
-TrackBallf g_trackball;
+TrackBallf g_trackball(1.5f);
 Matrixf g_rotm;
 Cameraf g_cam;
 

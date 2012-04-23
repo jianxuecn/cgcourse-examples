@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef __camera_h
 #define __camera_h
 
-#include <GL/gl.h>
+#include "glinc.h"
 #include "matrix.h"
 
 template <typename T> class Camera

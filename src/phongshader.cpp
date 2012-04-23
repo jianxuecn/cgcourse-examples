@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <stdlib.h>
 #include <GL/glew.h>
-#include <GL/freeglut.h>
+#include "glinc.h"
 
 #include "trackball.h"
 #include "camera.h"
@@ -387,7 +387,8 @@ void reshape(int width, int height)
 int main(int argc, char **argv)
 {
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE);
+    //glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_MULTISAMPLE);
+    glutInitDisplayString("double rgba depth samples=4");
     glutInitWindowSize(512,512);
     glutCreateWindow("Phong Shading");
 

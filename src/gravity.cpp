@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdlib.h>
-#include <GL/freeglut.h>
+#include "glinc.h"
 
 #include "trackball.h"
 #include "quaternion.h"
@@ -93,7 +93,7 @@ matrix_type g_rotm;
 Camera<value_type> g_cam;
 
 value_type g_sm = 1.0f;
-value_type g_dt = 0.02f;
+value_type g_dt = 0.0002f;
 value_type g_attenuation = 0.8f;
 value_type g_kf = 0.75;
 vector_type g_force(0.0, 0.0, 0.0, 0.0);
@@ -354,7 +354,7 @@ void mouse(int button, int state, int x, int y)
 int main(int argc, char *argv[])
 {
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_MULTISAMPLE);
 	glutInitWindowSize(512,512);
 	glutCreateWindow("Gravity");
 

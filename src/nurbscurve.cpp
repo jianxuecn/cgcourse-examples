@@ -19,7 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -----------------------------------------------------------------------
 */
 
-#include <GL/glut.h>
+#include <stdlib.h>
+#include "glinc.h"
 
 unsigned int const MAX_CPTS = 25;
 

@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -----------------------------------------------------------------------
 */
 
-#include <GL/glut.h>
 #include <stdio.h>
+#include "glinc.h"
 
 int board[3][3];  /* amount of color for each square */
 

@@ -24,6 +24,7 @@
 
 #if defined(WIN32)
 #include <GL/glut.h>
+#include <GL/glext.h>
 #elif defined(__APPLE__)
 #include <OpenGL/gl.h>
 #include <GLUT/glut.h>

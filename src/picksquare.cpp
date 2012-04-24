@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "glinc.h"
 
 int board[3][3];  /* amount of color for each square */
@@ -143,6 +144,19 @@ void reshape(int w, int h)
 	glLoadIdentity();
 }
 
+void keyboard(unsigned char key, int x, int y)
+{
+	switch (key)
+	{
+        case 27:
+            exit(0);
+            break;
+            
+        default:
+            break;
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	glutInit(&argc, argv);
@@ -153,6 +167,7 @@ int main(int argc, char *argv[])
 	glutMouseFunc(pick_squares);
 	glutReshapeFunc(reshape);
 	glutDisplayFunc(display);
+    glutKeyboardFunc(keyboard);
 	glutMainLoop();
 	return 0;
 }

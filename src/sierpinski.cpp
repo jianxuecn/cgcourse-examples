@@ -62,6 +62,19 @@ void display()
 	glFlush();
 }
 
+void keyboard(unsigned char key, int x, int y)
+{
+	switch (key)
+	{
+        case 27:
+            exit(0);
+            break;
+            
+        default:
+            break;
+	}
+}
+
 void init()
 {
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -82,6 +95,7 @@ int main(int argc, char *argv[])
 	glutInitWindowPosition(0, 0);
 	glutCreateWindow("Sierpinski Gasket");
 	glutDisplayFunc(display);
+    glutKeyboardFunc(keyboard);
 	init();
 	glutMainLoop();
 	return 0;

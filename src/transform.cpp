@@ -326,6 +326,10 @@ void keyboard(unsigned char key, int x, int y)
             g_bank = 0.0f;
             g_eular_start = true;
             break;
+            
+        case 27:
+            exit(0);
+            break;
     }
 }
 

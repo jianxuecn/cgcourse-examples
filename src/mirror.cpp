@@ -328,6 +328,18 @@ void display()
 
 }
 
+void keyboard(unsigned char key, int x, int y)
+{
+	switch (key)
+	{
+        case 27:
+            exit(0);
+            break;
+            
+        default:
+            break;
+	}
+}
 
 int main(int argc, char *argv[])
 {
@@ -343,6 +355,7 @@ int main(int argc, char *argv[])
     glutReshapeFunc(reshape);
     glutMouseFunc(mouse);
     glutMotionFunc(motion);
+    glutKeyboardFunc(keyboard);
 
     glutMainLoop();
 

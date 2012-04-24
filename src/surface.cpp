@@ -329,6 +329,19 @@ void mouse(int button, int state, int x, int y)
 	g_last_y = y;	
 }
 
+void keyboard(unsigned char key, int x, int y)
+{
+	switch (key)
+	{
+        case 27:
+            exit(0);
+            break;
+            
+        default:
+            break;
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	glutInit(&argc, argv);
@@ -343,6 +356,7 @@ int main(int argc, char *argv[])
 	glutReshapeFunc(reshape);
 	glutMouseFunc(mouse);
 	glutMotionFunc(motion);
+    glutKeyboardFunc(keyboard);
 
 
 	glutMainLoop();

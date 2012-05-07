@@ -54,7 +54,7 @@ add_example(gravity2)
 add_example(mandelsimp)
 
 if(FREEIMAGE_FOUND)
-  include_directories(${FREEIMAGE_INCLUDE_DIR}$)
+  include_directories(${FREEIMAGE_INCLUDE_DIR})
   add_example(texture2d ${FREEIMAGE_LIBRARIES})
   add_example(mirror ${FREEIMAGE_LIBRARIES})
   add_example(planet ${FREEIMAGE_LIBRARIES})

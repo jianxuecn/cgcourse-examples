@@ -21,6 +21,8 @@ find_package(MITK QUIET)
 
 include_directories(
   "include"
+  ${OPENGL_INCLUDE_DIR}
+  ${GLUT_INCLUDE_DIR}
 )
 
 add_custom_target(copy_data ${CMAKE_COMMAND} -E copy_directory ${cg_examples_SOURCE_DIR}/data ${cg_examples_BINARY_DIR}/data)
@@ -52,6 +54,7 @@ add_example(gravity2)
 add_example(mandelsimp)
 
 if(FREEIMAGE_FOUND)
+  include_directories(${FREEIMAGE_INCLUDE_DIR}$)
   add_example(texture2d ${FREEIMAGE_LIBRARIES})
   add_example(mirror ${FREEIMAGE_LIBRARIES})
   add_example(planet ${FREEIMAGE_LIBRARIES})
@@ -64,6 +67,7 @@ if(MITK_FOUND)
 endif(MITK_FOUND)
 
 if(GLEW_FOUND)
+  include_directories(${GLEW_INCLUDE_DIR})
   configure_file(src/shaders/phong.vert ${cg_examples_BINARY_DIR}/shaders/phong.vert COPYONLY)
   configure_file(src/shaders/phong.frag ${cg_examples_BINARY_DIR}/shaders/phong.frag COPYONLY)
   add_example(phongshader ${GLEW_GLEW_LIBRARY})

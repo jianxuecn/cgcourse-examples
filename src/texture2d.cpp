@@ -612,8 +612,15 @@ void keyboard(unsigned char key, int x, int y)
 		break;
 
     case 'o':
-        save_framebuffer("snapshot.png");
-        break;
+        {
+            char filename[256];
+            memset(filename, 0, 256);
+            static int i = 0;
+            sprintf(filename, "snapshot_%d.png", i++);
+            save_framebuffer(filename);
+            break;
+
+        }
 
 	case '0':
 	case '1':

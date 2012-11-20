@@ -279,8 +279,8 @@ void display(void)
         m2.RotateZMatrix(g_pitch);
         m3.RotateXMatrix(g_bank);
 
-        g_rotm = m1 * m2 * m3;
-        //g_rotm = m3 * m2 * m1;
+        //g_rotm = m1 * m2 * m3;
+        g_rotm = m3 * m2 * m1;
 
     }
 

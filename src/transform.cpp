@@ -37,9 +37,9 @@ bool g_eular_start = false;
 int g_last_x = 0;
 int g_last_y = 0;
 
-float const g_heading_stop = 30.0f;
-float const g_pitch_stop = 90.0f;
-float const g_bank_stop = 78.0f;
+float const g_heading_stop = 60.0f;
+float const g_pitch_stop = 45.0f;
+float const g_bank_stop = 30.0f;
 float const g_rotspeed = 0.2f;
 float const g_rotsteps = 50.0f;
 
@@ -50,7 +50,7 @@ float g_bank = 0.0f;
 GLdouble g_asize;
 
 GLint g_viewport[4];
-TrackBallf g_trackball(0.4);
+TrackBallf g_trackball(0.9);
 TrackBallf g_world_trackball(0.4);
 Matrixf g_rotm;
 Matrixf g_world_rotm;

@@ -14,7 +14,7 @@ IF (WIN32)
 
   IF(CYGWIN)
 
-    FIND_PATH( GLEW_INCLUDE_DIR GL/glew.h)
+    FIND_PATH( GLEW_INCLUDE_DIR GL/glew.h )
 
     FIND_LIBRARY( GLEW_GLEW_LIBRARY glew32
       ${OPENGL_LIBRARY_DIR}
@@ -26,13 +26,13 @@ IF (WIN32)
   ELSE(CYGWIN)
   
     FIND_PATH( GLEW_INCLUDE_DIR GL/glew.h
-      $ENV{GLEW_ROOT_PATH}/include
+      ${GLEW_ROOT_PATH}/include
     )
 
     FIND_LIBRARY( GLEW_GLEW_LIBRARY
       NAMES glew glew32
       PATHS
-      $ENV{GLEW_ROOT_PATH}/lib
+      ${GLEW_ROOT_PATH}/lib
       ${OPENGL_LIBRARY_DIR}
     )
 

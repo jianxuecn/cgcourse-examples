@@ -93,7 +93,7 @@ matrix_type g_rotm;
 Camera<value_type> g_cam;
 
 value_type g_sm = 1.0f;
-value_type g_dt = 0.0002f;
+value_type g_dt = 0.005f;
 value_type g_attenuation = 0.8f;
 value_type g_kf = 0.75;
 vector_type g_force(0.0, 0.0, 0.0, 0.0);

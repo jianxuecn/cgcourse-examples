@@ -131,7 +131,8 @@ void display()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
 	draw_squares(GL_RENDER);
-	glFlush();
+	//glFlush();
+    glutSwapBuffers();
 }
 
 void reshape(int w, int h)
@@ -160,7 +161,7 @@ void keyboard(unsigned char key, int x, int y)
 int main(int argc, char *argv[])
 {
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
 	glutInitWindowSize(400,400);
 	glutCreateWindow("Pick Square");
 	init();

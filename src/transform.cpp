@@ -24,6 +24,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "quaternion.h"
 #include "camera.h"
 
+#include <stdio.h>
+
 //#ifndef GL_MULTISAMPLE
 //#define GL_MULTISAMPLE  0x809D
 //#endif
@@ -58,6 +60,18 @@ Quaternionf g_rotv;
 Cameraf g_cam;
 
 GLUquadric *g_qobj;
+
+void draw_string(int x, int y, char const *str)
+{
+    for (int i=0; i<strlen(str); ++i)
+    {
+        int c = str[i];
+        glRasterPos2i(x, y);
+        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, c);
+        x += glutBitmapWidth(GLUT_BITMAP_9_BY_15, c);
+        //x += glutStrokeWidth(GLUT_STROKE_ROMAN, c);
+    }
+}
 
 void look_at(float eyex, float eyey, float eyez, float atx, float aty, float atz, float upx, float upy, float upz)
 {
@@ -263,6 +277,34 @@ void mouse_function(int button, int state, int x, int y)
 	g_last_y = y;	
 }
 
+void draw_rot_info()
+{
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluOrtho2D(g_viewport[0], g_viewport[2], g_viewport[1], g_viewport[3]);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glDisable(GL_LIGHTING);
+    glDisable(GL_DEPTH_TEST);
+    //glDisable(GL_TEXTURE_2D);
+
+    char strbuf[1024];
+    sprintf(strbuf, "heading: %0.2f, pitch: %0.2f, bank: %0.2f", g_heading, g_pitch, g_bank);
+    glColor3f(0.0f, 0.0f, 0.0f);
+    draw_string(10, 10, strbuf);
+
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+
+}
+
 void display(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -279,8 +321,8 @@ void display(void)
         m2.RotateZMatrix(g_pitch);
         m3.RotateXMatrix(g_bank);
 
-        //g_rotm = m1 * m2 * m3;
-        g_rotm = m3 * m2 * m1;
+        g_rotm = m1 * m2 * m3;
+        //g_rotm = m3 * m2 * m1;
 
     }
 
@@ -291,6 +333,8 @@ void display(void)
 		//g_trackball.BuildRotMatrix(g_rotm);
 	//}
     glEnable(GL_COLOR_MATERIAL);
+    glEnable(GL_LIGHTING);
+    glEnable(GL_DEPTH_TEST);
 
     glPushMatrix();
         glMultMatrixf(g_world_rotm);
@@ -306,15 +350,28 @@ void display(void)
 
     glDisable(GL_COLOR_MATERIAL);
 
+    draw_rot_info();
+
+    if (g_eular_start) {
+        if (g_heading < g_heading_stop)	{
+            g_heading += g_rotspeed;//g_heading_stop / g_rotsteps;
+            //sprintf(strbuf, "heading: %0.3f", g_heading);
+            //printf("heading: %0.3f", g_heading);
+        } else if (g_pitch < g_pitch_stop) {
+            g_pitch += g_rotspeed;//g_pitch_stop / g_rotsteps;
+            //sprintf(strbuf, "pitch: %0.3f", g_pitch);
+            //printf("pitch: %0.3f", g_heading);
+        } else if (g_bank < g_bank_stop) {
+            g_bank += g_rotspeed;//g_bank_stop / g_rotsteps;
+            //sprintf(strbuf, "bank: %0.3f", g_bank);
+            //printf("bank: %0.3f", g_bank);
+        } else {
+            g_eular_start = false;
+        }
+    }
+
 	glutSwapBuffers();
 
-	if (g_heading < g_heading_stop)	{
-		g_heading += g_rotspeed;//g_heading_stop / g_rotsteps;
-	} else if (g_pitch < g_pitch_stop) {
-		g_pitch += g_rotspeed;//g_pitch_stop / g_rotsteps;
-	} else if (g_bank < g_bank_stop) {
-		g_bank += g_rotspeed;//g_bank_stop / g_rotsteps;
-	} else g_eular_start = false;
 }
 
 void keyboard(unsigned char key, int x, int y)

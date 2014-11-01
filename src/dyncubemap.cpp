@@ -284,7 +284,7 @@ bool load_cube_map_bg_textures()
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, teximgs->GetWidth(), teximgs->GetHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, teximgs->GetSliceData(loop));
 
 			// Create Linear Filtered Texture
-			glBindTexture(GL_TEXTURE_2D, g_cm_bg_texture_id[loop+6]);	// Gen Tex 2 and 3 4
+			glBindTexture(GL_TEXTURE_2D, g_cm_bg_texture_id[loop+6]);	// Gen Tex 2 and 3
 			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, teximgs->GetWidth(), teximgs->GetHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, teximgs->GetSliceData(loop));
@@ -292,7 +292,7 @@ bool load_cube_map_bg_textures()
 			// Create MipMapped Texture
 			glBindTexture(GL_TEXTURE_2D, g_cm_bg_texture_id[loop+12]);	// Gen Tex 4 and 5
 			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
 			gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, teximgs->GetWidth(), teximgs->GetHeight(), GL_RGB, GL_UNSIGNED_BYTE, teximgs->GetSliceData(loop));
 		}
 

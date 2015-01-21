@@ -40,8 +40,10 @@ bool g_middle_button_down = false;
 bool g_right_button_down = false;
 
 float g_spin_angle = 0.01f;
+float g_earch_angle = 0.0f;
 
-GLuint g_texture_id;
+GLuint g_planet_texture_id;
+GLuint g_cloud_texture_id;
 
 GLfloat g_z=4.0f;		// Depth Into The Screen
 GLfloat const Z_STEP = 0.05f;
@@ -87,29 +89,32 @@ FIBITMAP* load_image(char const *filename, int flag = 0)
     return FreeImage_Load(fif, filename, flag);	
 }
 
-bool load_textures()
+GLuint load_texture(char const *imgfile)
 {
-    FIBITMAP *tdib = load_image("data/planet/earthmap.jpg");
-    if (!tdib) return false;
+    if (!imgfile) return 0;
 
-    bool status(false);
+    FIBITMAP *tdib = load_image(imgfile);
+    if (!tdib) return 0;
+
+    //bool status(false);
     unsigned int bpp = FreeImage_GetBPP(tdib);
 
     FIBITMAP *dib = tdib;
-    if (bpp != 24) dib = FreeImage_ConvertTo24Bits(tdib);
+    if (bpp != 24 && bpp != 32) dib = FreeImage_ConvertTo24Bits(tdib);
 
     BYTE *bits = FreeImage_GetBits(dib);
     unsigned int width = FreeImage_GetWidth(dib);
     unsigned int height = FreeImage_GetHeight(dib);
 
     GLenum format = FREEIMAGE_COLORORDER==FREEIMAGE_COLORORDER_BGR ? GL_BGR : GL_RGB;
+    if (bpp == 32) format = FREEIMAGE_COLORORDER==FREEIMAGE_COLORORDER_BGR ? GL_BGRA : GL_RGBA;
 
     RGBQUAD *pal = FreeImage_GetPalette(dib);
 
+    GLuint tex_id = 0;
     if (bits!=0 && width>0 && height>0) {
-        status = true;									// Set The Status To TRUE
-
-        glGenTextures(1, &g_texture_id);					// Create Three Textures
+        //status = true;									// Set The Status To TRUE
+        glGenTextures(1, &tex_id);					// Create Three Textures
 
         // Create Nearest Filtered Texture
         //glBindTexture(GL_TEXTURE_2D, g_texture_id);
@@ -124,17 +129,75 @@ bool load_textures()
         //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, bits);
 
         // Create MipMapped Texture
-        glBindTexture(GL_TEXTURE_2D, g_texture_id);
+        glBindTexture(GL_TEXTURE_2D, tex_id);
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
-        gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, width, height, format, GL_UNSIGNED_BYTE, bits);
+        gluBuild2DMipmaps(GL_TEXTURE_2D, (bpp==32 ? GL_RGBA : GL_RGB), width, height, format, GL_UNSIGNED_BYTE, bits);
     }
 
-    if (bpp != 24) FreeImage_Unload(dib);
+    if (bpp != 24 && bpp != 32) FreeImage_Unload(dib);
 
     FreeImage_Unload(tdib);
 
-    return status;										// Return The Status
+    return tex_id;										// Return The Status
+}
+
+bool load_textures()
+{
+    g_planet_texture_id = load_texture("data/planet/earthmap.jpg");
+    if (g_planet_texture_id == 0) return false;
+
+    g_cloud_texture_id = load_texture("data/planet/earthclouds.png");
+    if (g_cloud_texture_id == 0) return false;
+
+    return true;
+
+    //FIBITMAP *tdib = load_image("data/planet/earthmap.jpg");
+    //if (!tdib) return false;
+
+    //bool status(false);
+    //unsigned int bpp = FreeImage_GetBPP(tdib);
+
+    //FIBITMAP *dib = tdib;
+    //if (bpp != 24) dib = FreeImage_ConvertTo24Bits(tdib);
+
+    //BYTE *bits = FreeImage_GetBits(dib);
+    //unsigned int width = FreeImage_GetWidth(dib);
+    //unsigned int height = FreeImage_GetHeight(dib);
+
+    //GLenum format = FREEIMAGE_COLORORDER==FREEIMAGE_COLORORDER_BGR ? GL_BGR : GL_RGB;
+
+    //RGBQUAD *pal = FreeImage_GetPalette(dib);
+
+    //if (bits!=0 && width>0 && height>0) {
+    //    status = true;									// Set The Status To TRUE
+
+    //    glGenTextures(1, &g_texture_id);					// Create Three Textures
+
+    //    // Create Nearest Filtered Texture
+    //    //glBindTexture(GL_TEXTURE_2D, g_texture_id);
+    //    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    //    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    //    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, bits);
+
+    //    // Create Linear Filtered Texture
+    //    //glBindTexture(GL_TEXTURE_2D, g_texture_id);
+    //    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, bits);
+
+    //    // Create MipMapped Texture
+    //    glBindTexture(GL_TEXTURE_2D, g_texture_id);
+    //    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+    //    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
+    //    gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, width, height, format, GL_UNSIGNED_BYTE, bits);
+    //}
+
+    //if (bpp != 24) FreeImage_Unload(dib);
+
+    //FreeImage_Unload(tdib);
+
+    //return status;										// Return The Status
 }
 
 bool init() 
@@ -213,24 +276,45 @@ void display()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// Clear The Screen And The Depth Buffer
     g_cam.LookAt(0.0f, 0.0f, g_z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
 
+
+    glMultMatrixf(g_rotm);
+
     glPushMatrix();
     //glTranslatef(0.0f, 0.0f, g_z);
 
     if (g_rotate) {
-        g_trackball.Update(g_dr);
-        g_trackball.BuildRotMatrix(g_rotm);
+        //g_trackball.Update(g_dr);
+        //g_trackball.BuildRotMatrix(g_rotm);
+        //Matrixf drmat;
+        //g_dr.BuildMatrix(drmat);
+        //glMultMatrixf(drmat);
+        glRotatef(g_earch_angle, 0.0f, 0.0f, 1.0f);
+        g_earch_angle += g_spin_angle;
     }
-    glMultMatrixf(g_rotm);
 
     if (g_light) glEnable(GL_LIGHTING);
     else glDisable(GL_LIGHTING);
 
-    glBindTexture(GL_TEXTURE_2D, g_texture_id);
+    glBindTexture(GL_TEXTURE_2D, g_planet_texture_id);
 
     glEnable(GL_TEXTURE_2D);
 
+    gluQuadricDrawStyle(g_qobj, GLU_FILL);
+    //gluQuadricNormals(g_qobj, GLU_SMOOTH);
+    gluQuadricTexture(g_qobj, GL_TRUE);
 
     gluSphere(g_qobj, 1.0, 50, 50);
+
+    //glDisable(GL_TEXTURE_2D);
+    //glDisable(GL_LIGHTING);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    gluQuadricDrawStyle(g_qobj, GLU_FILL);
+    //gluQuadricNormals(g_qobj, GLU_SMOOTH);
+    gluQuadricTexture(g_qobj, GL_TRUE);
+    glBindTexture(GL_TEXTURE_2D, g_cloud_texture_id);
+    gluSphere(g_qobj, 1.03, 50, 50);
 
     glPopMatrix();
 
@@ -261,6 +345,15 @@ void keyboard(unsigned char key, int x, int y)
 
     case 's':
         g_light = false;
+        break;
+
+    case '.':
+        g_spin_angle *= 2.0f;
+        break;
+
+    case ',':
+        if (g_spin_angle <= 0.01f) g_spin_angle = 0.01f;
+        else g_spin_angle *= 0.5f;
         break;
 
     default:

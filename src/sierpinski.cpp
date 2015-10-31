@@ -42,6 +42,8 @@ void display()
 	glEnd();
 
 	srand((unsigned int)(time(0)));
+    glColor3f(1.0f, 0.0f, 0.0f);
+    glBegin(GL_POINTS);
 	for (int i=0; i<55000; ++i)
 	{
 		int j = rand() % 3;
@@ -54,11 +56,9 @@ void display()
 
 		//glColor3f(r, g, b);
 		//if (i<100) continue;
-		glColor3f(1.0f, 0.0f, 0.0f);
-		glBegin(GL_POINTS);
 		glVertex2fv(p.coord);
-		glEnd();
 	}
+		glEnd();
 	glFlush();
 }
 

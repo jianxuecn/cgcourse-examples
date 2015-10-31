@@ -40,7 +40,7 @@ bool g_middle_button_down = false;
 bool g_right_button_down = false;
 
 float g_spin_angle = 0.01f;
-float g_earch_angle = 0.0f;
+float g_earth_angle = 0.0f;
 
 GLuint g_planet_texture_id;
 GLuint g_cloud_texture_id;
@@ -288,8 +288,8 @@ void display()
         //Matrixf drmat;
         //g_dr.BuildMatrix(drmat);
         //glMultMatrixf(drmat);
-        glRotatef(g_earch_angle, 0.0f, 0.0f, 1.0f);
-        g_earch_angle += g_spin_angle;
+        glRotatef(g_earth_angle, 0.0f, 0.0f, 1.0f);
+        g_earth_angle += g_spin_angle;
     }
 
     if (g_light) glEnable(GL_LIGHTING);

@@ -389,5 +389,4 @@ template <typename T> Quaternion<T> operator * (Quaternion<T> const &p, Quaterni
 typedef Quaternion<float> Quaternionf;
 typedef Quaternion<double> Quaterniond;
 
-
 #endif

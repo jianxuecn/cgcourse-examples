@@ -38,7 +38,7 @@ typedef Matrix<value_type> matrix_type;
 
 value_type const EPS = (value_type)0.000001;
 value_type const ZERO = (value_type)0.0000000001;
-value_type const DENSITY = (value_type)2000.0;
+value_type const DENSITY = (value_type)500.0;
 value_type const MASS_MIN = (value_type)1.0;
 value_type const MASS_MAX = (value_type)10.0;
 value_type const RADIUS_MIN = (value_type)0.2;
@@ -107,11 +107,14 @@ matrix_type g_rotm;
 Camera<value_type> g_cam;
 value_type g_fov = (value_type)45;
 
+CPUCounter g_timer;
+double g_elapsed_seconds;
+
 value_type g_dt = (value_type)0.2;
 value_type g_recover_f = (value_type)0.5;
 value_type g_kf = (value_type)0.75;
 vector_type g_force(0.0, 0.0, 0.0, 0.0);
-vector_type const GRAVITATION(0.0, -0.0049, 0.0, 0.0);
+vector_type const GRAVITATION(0.0, -0.49, 0.0, 0.0);
 vector_type g_spos(0.0, 1.0, 0.0, 1.0);
 vector_type g_svel(1.0, 0.0, 1.5, 0.0);
 
@@ -263,7 +266,16 @@ bool init()
     printf("grids: %d x %d x %d\n", GRID_NUM_AXIS, GRID_NUM_AXIS, GRID_NUM_AXIS);
     printf("particle number: %d\n", g_balls.size());
 
+    g_elapsed_seconds = 0;
+    g_timer.CounterStart();
+
     return true;
+}
+
+void update_timer()
+{
+    g_elapsed_seconds = g_timer.GetCounts() / g_timer.GetFrequence();
+    g_timer.CounterStart();
 }
 
 /*
@@ -467,9 +479,9 @@ void draw_something()
 * version (2): based on discrete element method (DEM)
 */
 
-value_type const COLLISION_SPRING = (value_type)16000;
-value_type const COLLISION_DAMPING = (value_type)650;
-value_type const COLLISION_FRICTION = (value_type)320;
+value_type const COLLISION_SPRING = (value_type)2000;
+value_type const COLLISION_DAMPING = (value_type)10;
+value_type const COLLISION_FRICTION = (value_type)3;
 value_type const COLLISION_ATTRACTION = (value_type)0;
 
 bool ball_collision(Ball &bi, Ball &bj, vector_type &force)
@@ -525,15 +537,15 @@ void integrate()
     for (size_t i=0; i<g_balls.size(); ++i) {
         Ball &parti = g_balls[i];
         parti.init();
-        if (g_right_button_down) parti.apply_force(vector_type(1.0, 3.0, 1.70, 0.0));
+        if (g_right_button_down) parti.apply_force(vector_type(5.0, 15.0, 8.70, 0.0));
         if (fabs(parti.position.ele[1]+WALL_SIZE-parti.radius)<ZERO) parti.apply_force(-g_kf*parti.mass*(parti.velocity-vector_type(0.0, parti.velocity.ele[1], 0.0, 0.0)));
         matrix_type m = g_rotm;
         m.Inverse();
         vector_type gf = m * GRAVITATION * parti.mass;
         //g_force += gf;
         parti.apply_force(gf);
-        parti.update_velocity(g_dt);
-        parti.update_position(g_dt);
+        parti.update_velocity(g_elapsed_seconds);
+        parti.update_position(g_elapsed_seconds);
 
         vector_type &pos = parti.position;
         vector_type &vel = parti.velocity;
@@ -640,7 +652,7 @@ void grid_ball_collision()
                 }
             }
         }
-        parti.update_velocity(0.0001);
+        parti.update_velocity(g_elapsed_seconds);
     }
 }
 
@@ -725,6 +737,7 @@ void display()
     g_material_diffuse[3] = 1.0f;
     set_material();
 
+    update_timer();
     draw_something3();
 
     draw_walls();

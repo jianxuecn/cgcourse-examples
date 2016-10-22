@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "trackball.h"
 #include "quaternion.h"
 #include "camera.h"
+#include "cpucounter.h"
 
 float g_light_ambient[]  = { 0.0f, 0.0f, 0.0f, 1.0f };
 float g_light_diffuse[]  = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -83,7 +84,7 @@ bool g_left_button_down = false;
 bool g_middle_button_down = false;
 bool g_right_button_down = false;
 
-typedef float value_type;
+typedef double value_type;
 typedef Vector<value_type> vector_type;
 typedef Matrix<value_type> matrix_type;
 
@@ -92,8 +93,11 @@ TrackBall<value_type> g_trackball;
 matrix_type g_rotm;
 Camera<value_type> g_cam;
 
+CPUCounter g_timer;
+double g_elapsed_seconds;
+
 value_type g_sm = 1.0f;
-value_type g_dt = 0.005f;
+//value_type g_dt = 0.005f;
 value_type g_attenuation = 0.8f;
 value_type g_kf = 0.75;
 vector_type g_force(0.0, 0.0, 0.0, 0.0);
@@ -136,7 +140,16 @@ bool init()
 
 	g_rotm.IdentityMatrix();
 
+    g_elapsed_seconds = 0;
+    g_timer.CounterStart();
+
 	return true;
+}
+
+void update_timer()
+{
+    g_elapsed_seconds = g_timer.GetCounts() / g_timer.GetFrequence();
+    g_timer.CounterStart();
 }
 
 void draw_something()
@@ -151,8 +164,8 @@ void draw_something()
 	g_force += gf;
 
 	// (2) update position (use the Euler Method to solve the equations)
-	g_svel += g_force * ((value_type)(1.0)/g_sm) * g_dt;
-	g_spos += g_svel * g_dt;
+	g_svel += g_force * ((value_type)(1.0)/g_sm) * g_elapsed_seconds;
+	g_spos += g_svel * g_elapsed_seconds;
 
 	if (fabs(g_spos.ele[0]) >= WALL_SIZE-BALL_SIZE) {
 		g_svel.ele[0] = -g_svel.ele[0]*g_attenuation;
@@ -292,6 +305,8 @@ void display()
 	g_material_diffuse[2] = 0.04f;
 	g_material_diffuse[3] = 1.0f;
 	set_material();
+
+    update_timer();
 	draw_something();
 	draw_walls();
 

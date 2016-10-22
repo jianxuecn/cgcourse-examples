@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "trackball.h"
 #include "quaternion.h"
 #include "camera.h"
+#include "cpucounter.h"
 
 #include "mitkBMPReader.h"
 #include "mitkVolume.h"
@@ -71,10 +72,10 @@ float g_light_position[] = { 0.0f, 0.0f, 10.0f, 1.0f };
 float g_light_direction[] = { 0.0f, 0.0f, -1.0f, 0.0f };
 
 float g_light_rot = 0.0f;
-float g_light_rot_speed = 2.0f;
+float g_light_rot_speed = 20.0f; // degrees per second
 
 float g_light_rot2 = 0.0f;
-float g_light_rot_speed2 = 6.0f;
+float g_light_rot_speed2 = 60.0f;  // degrees per second
 
 float g_material_ambient[]  = { 1.0f, 0.57f, 0.04f, 1.0f };
 float g_material_diffuse[]  = { 1.0f, 0.57f, 0.04f, 1.0f };
@@ -109,6 +110,7 @@ TrackBallf g_trackball;
 Matrixf g_rotm;
 Quaternionf g_rotv;
 Cameraf g_cam;
+CPUCounter g_timer;
 
 Vectorf g_objpos(0.0f, 0.0f, 4.0f);
 Vectorf g_campos(0.0f, 0.0f, 5.0f);
@@ -485,6 +487,8 @@ bool init()
 	glEnable(GL_LIGHT0);								// Enable Light One
 
 	//g_cam.LookAt(0.0f, 0.0f, 100.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+
+    g_timer.CounterStart();
 
 	return true;
 }
@@ -896,10 +900,12 @@ void display()
 
 	glutSwapBuffers();
 
-    g_light_rot += g_light_rot_speed;
+    double dt = g_timer.GetCounts() / g_timer.GetFrequence();
+    g_timer.CounterStart();
+    g_light_rot += g_light_rot_speed * dt;
     if (g_light_rot > 360.0f) g_light_rot = 0.0f;
 
-    g_light_rot2 += g_light_rot_speed2;
+    g_light_rot2 += g_light_rot_speed2 * dt;
     if (g_light_rot2 > 360.0f) g_light_rot2 = 0.0f;
 }
 

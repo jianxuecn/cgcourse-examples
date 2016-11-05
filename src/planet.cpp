@@ -41,6 +41,7 @@ bool g_right_button_down = false;
 
 float g_spin_angle = 0.01f;
 float g_earth_angle = 0.0f;
+float g_cloud_angle = 0.0f;
 
 GLuint g_planet_texture_id;
 GLuint g_cloud_texture_id;
@@ -64,7 +65,6 @@ GLfloat g_material_specular_power = 100.0f;
 GLint g_viewport[4];
 TrackBallf g_trackball(0.8);
 Matrixf g_rotm;
-Quaternionf g_dr;
 Cameraf g_cam;
 
 GLUquadric *g_qobj;
@@ -151,53 +151,6 @@ bool load_textures()
     if (g_cloud_texture_id == 0) return false;
 
     return true;
-
-    //FIBITMAP *tdib = load_image("data/planet/earthmap.jpg");
-    //if (!tdib) return false;
-
-    //bool status(false);
-    //unsigned int bpp = FreeImage_GetBPP(tdib);
-
-    //FIBITMAP *dib = tdib;
-    //if (bpp != 24) dib = FreeImage_ConvertTo24Bits(tdib);
-
-    //BYTE *bits = FreeImage_GetBits(dib);
-    //unsigned int width = FreeImage_GetWidth(dib);
-    //unsigned int height = FreeImage_GetHeight(dib);
-
-    //GLenum format = FREEIMAGE_COLORORDER==FREEIMAGE_COLORORDER_BGR ? GL_BGR : GL_RGB;
-
-    //RGBQUAD *pal = FreeImage_GetPalette(dib);
-
-    //if (bits!=0 && width>0 && height>0) {
-    //    status = true;									// Set The Status To TRUE
-
-    //    glGenTextures(1, &g_texture_id);					// Create Three Textures
-
-    //    // Create Nearest Filtered Texture
-    //    //glBindTexture(GL_TEXTURE_2D, g_texture_id);
-    //    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    //    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    //    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, bits);
-
-    //    // Create Linear Filtered Texture
-    //    //glBindTexture(GL_TEXTURE_2D, g_texture_id);
-    //    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    //    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, bits);
-
-    //    // Create MipMapped Texture
-    //    glBindTexture(GL_TEXTURE_2D, g_texture_id);
-    //    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-    //    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
-    //    gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, width, height, format, GL_UNSIGNED_BYTE, bits);
-    //}
-
-    //if (bpp != 24) FreeImage_Unload(dib);
-
-    //FreeImage_Unload(tdib);
-
-    //return status;										// Return The Status
 }
 
 bool init() 
@@ -242,10 +195,10 @@ bool init()
     Vectorf ax(0, 0, 1, 0);
     double angle = acos(ax * vv);
     ax = ax % vv;
-    g_dr.AxisRadToQuat(ax[0], ax[1], ax[2], angle);
-    g_trackball.Update(g_dr);
+    Quaternionf dr;
+    dr.AxisRadToQuat(ax[0], ax[1], ax[2], angle);
+    g_trackball.Update(dr);
     g_trackball.BuildRotMatrix(g_rotm);
-    g_dr.AxisDegToQuat(vv[0], vv[1], vv[2], g_spin_angle);
 
     return true;										// Initialization Went OK
 }
@@ -282,39 +235,34 @@ void display()
     glPushMatrix();
     //glTranslatef(0.0f, 0.0f, g_z);
 
+    if (g_light) glEnable(GL_LIGHTING);
+    else glDisable(GL_LIGHTING);
+    glEnable(GL_TEXTURE_2D);
+
+    glPushMatrix();
+    glRotatef(g_earth_angle, 0.0f, 0.0f, 1.0f);
     if (g_rotate) {
-        //g_trackball.Update(g_dr);
-        //g_trackball.BuildRotMatrix(g_rotm);
-        //Matrixf drmat;
-        //g_dr.BuildMatrix(drmat);
-        //glMultMatrixf(drmat);
-        glRotatef(g_earth_angle, 0.0f, 0.0f, 1.0f);
         g_earth_angle += g_spin_angle;
     }
 
-    if (g_light) glEnable(GL_LIGHTING);
-    else glDisable(GL_LIGHTING);
-
     glBindTexture(GL_TEXTURE_2D, g_planet_texture_id);
-
-    glEnable(GL_TEXTURE_2D);
-
-    gluQuadricDrawStyle(g_qobj, GLU_FILL);
-    //gluQuadricNormals(g_qobj, GLU_SMOOTH);
-    gluQuadricTexture(g_qobj, GL_TRUE);
-
     gluSphere(g_qobj, 1.0, 50, 50);
 
-    //glDisable(GL_TEXTURE_2D);
-    //glDisable(GL_LIGHTING);
+    glPopMatrix();
+
+    glPushMatrix();
+    glRotatef(g_cloud_angle, 0.0f, 0.0f, 1.0f);
+    if (g_rotate) {
+        g_cloud_angle += g_spin_angle*1.5f;
+    }
+
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    gluQuadricDrawStyle(g_qobj, GLU_FILL);
-    //gluQuadricNormals(g_qobj, GLU_SMOOTH);
-    gluQuadricTexture(g_qobj, GL_TRUE);
     glBindTexture(GL_TEXTURE_2D, g_cloud_texture_id);
     gluSphere(g_qobj, 1.03, 50, 50);
+
+    glPopMatrix();
 
     glPopMatrix();
 
@@ -336,11 +284,6 @@ void keyboard(unsigned char key, int x, int y)
 
     case 'r':
         g_rotate = !g_rotate;
-        if (g_rotate) {
-            Vectorf ax(0, 0, 1, 0);
-            ax *= g_rotm;
-            g_dr.AxisDegToQuat(ax[0], ax[1], ax[2], 1.0f);
-        }
         break;
 
     case 's':
@@ -395,12 +338,6 @@ void motion(int x, int y)
 
         g_trackball.Update((float)(2.0*(x-g_viewport[0])/g_viewport[2]-1), (float)(2.0*(g_viewport[3]-y-1-g_viewport[1])/g_viewport[3]-1));
         g_trackball.BuildRotMatrix(g_rotm);
-
-        if (g_rotate) {
-            Vectorf ax(0, 0, 1, 0);
-            ax *= g_rotm;
-            g_dr.AxisDegToQuat(ax[0], ax[1], ax[2], g_spin_angle);
-        }
 
         glutPostRedisplay();
     }

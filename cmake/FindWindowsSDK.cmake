@@ -1,327 +1,629 @@
-# - Find Windows Platform SDK
-# Find the Windows includes
+# - Find the Windows SDK aka Platform SDK
 #
-#  WINSDK_INCLUDE_DIR - where to find Windows.h
-#  WINSDK_INCLUDE_DIRS - where to find all Windows headers
-#  WINSDK_LIBRARY_DIR - where to find libraries
-#  WINSDK_FOUND       - True if Windows SDK found.
+# Relevant Wikipedia article: http://en.wikipedia.org/wiki/Microsoft_Windows_SDK
+#
+# Pass "COMPONENTS tools" to ignore Visual Studio version checks: in case
+# you just want the tool binaries to run, rather than the libraries and headers
+# for compiling.
+#
+# Variables:
+#  WINDOWSSDK_FOUND - if any version of the windows or platform SDK was found that is usable with the current version of visual studio
+#  WINDOWSSDK_LATEST_DIR
+#  WINDOWSSDK_LATEST_NAME
+#  WINDOWSSDK_FOUND_PREFERENCE - if we found an entry indicating a "preferred" SDK listed for this visual studio version
+#  WINDOWSSDK_PREFERRED_DIR
+#  WINDOWSSDK_PREFERRED_NAME
+#
+#  WINDOWSSDK_DIRS - contains no duplicates, ordered most recent first.
+#  WINDOWSSDK_PREFERRED_FIRST_DIRS - contains no duplicates, ordered with preferred first, followed by the rest in descending recency
+#
+# Functions:
+#  windowssdk_name_lookup(<directory> <output variable>) - Find the name corresponding with the SDK directory you pass in, or
+#     NOTFOUND if not recognized. Your directory must be one of WINDOWSSDK_DIRS for this to work.
+#
+#  windowssdk_build_lookup(<directory> <output variable>) - Find the build version number corresponding with the SDK directory you pass in, or
+#     NOTFOUND if not recognized. Your directory must be one of WINDOWSSDK_DIRS for this to work.
+#
+#  get_windowssdk_from_component(<file or dir> <output variable>) - Given a library or include dir,
+#     find the Windows SDK root dir corresponding to it, or NOTFOUND if unrecognized.
+#
+#  get_windowssdk_library_dirs(<directory> <output variable>) - Find the architecture-appropriate
+#     library directories corresponding to the SDK directory you pass in (or NOTFOUND if none)
+#
+#  get_windowssdk_library_dirs_multiple(<output variable> <directory> ...) - Find the architecture-appropriate
+#     library directories corresponding to the SDK directories you pass in, in order, skipping those not found. NOTFOUND if none at all.
+#     Good for passing WINDOWSSDK_DIRS or WINDOWSSDK_DIRS to if you really just want a file and don't care where from.
+#
+#  get_windowssdk_include_dirs(<directory> <output variable>) - Find the
+#     include directories corresponding to the SDK directory you pass in (or NOTFOUND if none)
+#
+#  get_windowssdk_include_dirs_multiple(<output variable> <directory> ...) - Find the
+#     include directories corresponding to the SDK directories you pass in, in order, skipping those not found. NOTFOUND if none at all.
+#     Good for passing WINDOWSSDK_DIRS or WINDOWSSDK_DIRS to if you really just want a file and don't care where from.
+#
+# Requires these CMake modules:
+#  FindPackageHandleStandardArgs (known included with CMake >=2.6.2)
+#
+# Original Author:
+# 2012 Ryan Pavlik <rpavlik@iastate.edu> <abiryan@ryand.net>
+# http://academic.cleardefinition.com
+# Iowa State University HCI Graduate Program/VRAC
+#
+# Copyright Iowa State University 2012.
+# Distributed under the Boost Software License, Version 1.0.
+# (See accompanying file LICENSE_1_0.txt or copy at
+# http://www.boost.org/LICENSE_1_0.txt)
 
-IF(WINSDK_FOUND)
-  # If Windows SDK already found, skip it
-  RETURN()
-ENDIF(WINSDK_FOUND)
+set(_preferred_sdk_dirs) # pre-output
+set(_win_sdk_dirs) # pre-output
+set(_win_sdk_versanddirs) # pre-output
+set(_win_sdk_buildsanddirs) # pre-output
+set(_winsdk_vistaonly) # search parameters
+set(_winsdk_kits) # search parameters
 
-# Values can be CURRENT or any existing versions 7.1, 8.0A, etc...
-SET(WINSDK_VERSION "CURRENT" CACHE STRING "Windows SDK version to prefer")
 
-MACRO(DETECT_WINSDK_VERSION_HELPER _ROOT _VERSION)
-  GET_FILENAME_COMPONENT(WINSDK${_VERSION}_DIR "[${_ROOT}\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows\\v${_VERSION};InstallationFolder]" ABSOLUTE)
+set(_WINDOWSSDK_ANNOUNCE OFF)
+if(NOT WINDOWSSDK_FOUND AND (NOT WindowsSDK_FIND_QUIETLY))
+  set(_WINDOWSSDK_ANNOUNCE ON)
+endif()
+macro(_winsdk_announce)
+  if(_WINSDK_ANNOUNCE)
+    message(STATUS ${ARGN})
+  endif()
+endmacro()
 
-  IF(WINSDK${_VERSION}_DIR AND NOT WINSDK${_VERSION}_DIR STREQUAL "/registry")
-    SET(WINSDK${_VERSION}_FOUND ON)
-    GET_FILENAME_COMPONENT(WINSDK${_VERSION}_VERSION_FULL "[${_ROOT}\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows\\v${_VERSION};ProductVersion]" NAME)
-    #IF(NOT WindowsSDK_FIND_QUIETLY)
-      MESSAGE(STATUS "Found Windows SDK ${_VERSION} in ${WINSDK${_VERSION}_DIR}")
-    #ENDIF(NOT WindowsSDK_FIND_QUIETLY)
-  ELSE(WINSDK${_VERSION}_DIR AND NOT WINSDK${_VERSION}_DIR STREQUAL "/registry")
-    SET(WINSDK${_VERSION}_DIR "")
-  ENDIF(WINSDK${_VERSION}_DIR AND NOT WINSDK${_VERSION}_DIR STREQUAL "/registry")
-ENDMACRO(DETECT_WINSDK_VERSION_HELPER)
-
-MACRO(DETECT_WINSDK_VERSION _VERSION)
-  SET(WINSDK${_VERSION}_FOUND OFF)
-  DETECT_WINSDK_VERSION_HELPER("HKEY_CURRENT_USER" ${_VERSION})
-
-  IF(NOT WINSDK${_VERSION}_FOUND)
-    DETECT_WINSDK_VERSION_HELPER("HKEY_LOCAL_MACHINE" ${_VERSION})
-  ENDIF(NOT WINSDK${_VERSION}_FOUND)
-ENDMACRO(DETECT_WINSDK_VERSION)
-
-SET(WINSDK_VERSIONS "8.1" "8.1A" "8.0" "8.0A" "7.1" "7.1A" "7.0" "7.0A" "6.1" "6.0" "6.0A")
-SET(WINSDK_DETECTED_VERSIONS)
-
-# Search all supported Windows SDKs
-FOREACH(_VERSION ${WINSDK_VERSIONS})
-  DETECT_WINSDK_VERSION(${_VERSION})
-
-  IF(WINSDK${_VERSION}_FOUND)
-    LIST(APPEND WINSDK_DETECTED_VERSIONS ${_VERSION})
-    #message(STATUS "WINSDK${_VERSION}_DIR = " ${WINSDK${_VERSION}_DIR})
-  ENDIF(WINSDK${_VERSION}_FOUND)
-ENDFOREACH(_VERSION)
-
-SET(WINSDK_SUFFIX)
-
-IF(CMAKE_CL_64)
-  SET(WINSDK8_SUFFIX "x64")
-  SET(WINSDK_SUFFIX "x64")
-ELSE(CMAKE_CL_64)
-  SET(WINSDK8_SUFFIX "x86")
-ENDIF(CMAKE_CL_64)
-
-SET(WINSDKCURRENT_VERSION_INCLUDE $ENV{INCLUDE})
-
-IF(WINSDKCURRENT_VERSION_INCLUDE)
-  FILE(TO_CMAKE_PATH "${WINSDKCURRENT_VERSION_INCLUDE}" WINSDKCURRENT_VERSION_INCLUDE)
-ENDIF(WINSDKCURRENT_VERSION_INCLUDE)
-
-SET(WINSDKENV_DIR $ENV{WINSDK_DIR})
-#message(STATUS "WINSDKENV_DIR = " ${WINSDKENV_DIR})
-#message(STATUS "WINSDK_DETECTED_VERSIONS = " ${WINSDK_DETECTED_VERSIONS})
-#message(STATUS "WINSDK_VERSION = " ${WINSDK_VERSION})
-#message(STATUS "WINSDKCURRENT_VERSION_INCLUDE = " ${WINSDKCURRENT_VERSION_INCLUDE})
-
-MACRO(FIND_WINSDK_VERSION_HEADERS)
-  IF(WINSDK_DIR AND NOT WINSDK_VERSION)
-    # Search version in headers
-    IF(EXISTS ${WINSDK_DIR}/include/Msi.h)
-      SET(_MSI_FILE ${WINSDK_DIR}/include/Msi.h)
-    ENDIF(EXISTS ${WINSDK_DIR}/include/Msi.h)
-
-    IF(EXISTS ${WINSDK_DIR}/Include/um/Msi.h)
-      SET(_MSI_FILE ${WINSDK_DIR}/Include/um/Msi.h)
-    ENDIF(EXISTS ${WINSDK_DIR}/Include/um/Msi.h)
-
-    IF(_MSI_FILE)
-      # Look for Windows SDK 8.0
-      FILE(STRINGS ${_MSI_FILE} _CONTENT REGEX "^#ifndef NTDDI_WIN8")
-
-      IF(_CONTENT)
-        SET(WINSDK_VERSION "8.0")
-      ENDIF(_CONTENT)
-      
-      IF(NOT WINSDK_VERSION)
-        # Look for Windows SDK 7.0
-        FILE(STRINGS ${_MSI_FILE} _CONTENT REGEX "^#ifndef NTDDI_WIN7")
-        
-        IF(_CONTENT)
-          IF(EXISTS ${WINSDK_DIR}/include/winsdkver.h)
-            SET(_WINSDKVER_FILE ${WINSDK_DIR}/include/winsdkver.h)
-          ELSEIF(EXISTS ${WINSDK_DIR}/include/WinSDKVer.h)
-            SET(_WINSDKVER_FILE ${WINSDK_DIR}/include/WinSDKVer.h)
-          ENDIF(EXISTS ${WINSDK_DIR}/include/winsdkver.h)
-
-          IF(_WINSDKVER_FILE)
-            # Load WinSDKVer.h content
-            FILE(STRINGS ${_WINSDKVER_FILE} _CONTENT REGEX "^#define NTDDI_MAXVER")
-
-            # Get NTDDI_MAXVER value
-            STRING(REGEX REPLACE "^.*0x([0-9A-Fa-f]+).*$" "\\1" _WINSDKVER "${_CONTENT}")
-
-            # In Windows SDK 7.1, NTDDI_MAXVER is wrong
-            IF(_WINSDKVER STREQUAL "06010000")
-              SET(WINSDK_VERSION "7.1")
-            ELSEIF(_WINSDKVER STREQUAL "0601")
-              SET(WINSDK_VERSION "7.0A")
-            ELSE(_WINSDKVER STREQUAL "06010000")
-              MESSAGE(FATAL_ERROR "Can't determine Windows SDK version with NTDDI_MAXVER 0x${_WINSDKVER}")
-            ENDIF(_WINSDKVER STREQUAL "06010000")
-          ELSE(_WINSDKVER_FILE)
-            SET(WINSDK_VERSION "7.0")
-          ENDIF(_WINSDKVER_FILE)
-        ENDIF(_CONTENT)
-      ENDIF(NOT WINSDK_VERSION)
-
-      IF(NOT WINSDK_VERSION)
-        # Look for Windows SDK 6.0
-        FILE(STRINGS ${_MSI_FILE} _CONTENT REGEX "^#ifndef NTDDI_VISTA")
-        
-        IF(_CONTENT)
-          SET(WINSDK_VERSION "6.0")
-        ENDIF(_CONTENT)
-      ENDIF(NOT WINSDK_VERSION)
-
-      IF(NOT WINSDK_VERSION)
-        # Look for Windows SDK 5.2
-        FILE(STRINGS ${_MSI_FILE} _CONTENT REGEX "^#ifndef NTDDI_WS03SP1")
-
-        IF(_CONTENT)
-          SET(WINSDK_VERSION "5.2")
-        ENDIF(_CONTENT)
-      ENDIF(NOT WINSDK_VERSION)
-
-      IF(NOT WINSDK_VERSION)
-        # Look for Windows SDK 5.1
-        FILE(STRINGS ${_MSI_FILE} _CONTENT REGEX "^#ifndef NTDDI_WINXP")
-
-        IF(_CONTENT)
-          SET(WINSDK_VERSION "5.1")
-        ENDIF(_CONTENT)
-      ENDIF(NOT WINSDK_VERSION)
-
-      IF(NOT WINSDK_VERSION)
-        # Look for Windows SDK 5.0
-        FILE(STRINGS ${_MSI_FILE} _CONTENT REGEX "^#ifndef NTDDI_WIN2K")
-
-        IF(_CONTENT)
-          SET(WINSDK_VERSION "5.0")
-        ENDIF(_CONTENT)
-      ENDIF(NOT WINSDK_VERSION)
-    ELSE(_MSI_FILE)
-      MESSAGE(FATAL_ERROR "Unable to find Msi.h in ${WINSDK_DIR}")
-    ENDIF(_MSI_FILE)
-  ENDIF(WINSDK_DIR AND NOT WINSDK_VERSION)
-ENDMACRO(FIND_WINSDK_VERSION_HEADERS)
-
-MACRO(USE_CURRENT_WINSDK)
-  SET(WINSDK_DIR "")
-  SET(WINSDK_VERSION "")
-  SET(WINSDK_VERSION_FULL "")
-
-  # Use WINSDK environment variable
-  IF(WINSDKENV_DIR AND EXISTS ${WINSDKENV_DIR}/include/Windows.h)
-    SET(WINSDK_DIR ${WINSDKENV_DIR})
-  ENDIF(WINSDKENV_DIR AND EXISTS ${WINSDKENV_DIR}/include/Windows.h)
-
-  # Use INCLUDE environment variable
-  IF(NOT WINSDK_DIR AND WINSDKCURRENT_VERSION_INCLUDE)
-    FOREACH(_INCLUDE ${WINSDKCURRENT_VERSION_INCLUDE})
-      FILE(TO_CMAKE_PATH ${_INCLUDE} _INCLUDE)
-
-      # Look for Windows.h because there are several paths
-      IF(EXISTS ${_INCLUDE}/Windows.h)
-        STRING(REGEX REPLACE "/(include|INCLUDE|Include)" "" WINSDK_DIR ${_INCLUDE})
-        STRING(REGEX REPLACE "/(um)" "" WINSDK_DIR ${WINSDK_DIR})
-        MESSAGE(STATUS "Found Windows SDK environment variable in ${WINSDK_DIR}")
-        BREAK()
-      ENDIF(EXISTS ${_INCLUDE}/Windows.h)
-    ENDFOREACH(_INCLUDE)
-  ENDIF(NOT WINSDK_DIR AND WINSDKCURRENT_VERSION_INCLUDE)
-
-  IF(WINSDK_DIR)
-    # Compare WINSDK_DIR with registered Windows SDKs
-    FOREACH(_VERSION ${WINSDK_DETECTED_VERSIONS})
-      IF(WINSDK_DIR STREQUAL "${WINSDK${_VERSION}_DIR}")
-        SET(WINSDK_VERSION ${_VERSION})
-        SET(WINSDK_VERSION_FULL "${WINSDK${WINSDK_VERSION}_VERSION_FULL}")
-        BREAK()
-      ENDIF(WINSDK_DIR STREQUAL "${WINSDK${_VERSION}_DIR}")
-    ENDFOREACH(_VERSION)
-
-    FIND_WINSDK_VERSION_HEADERS()
-  ENDIF(WINSDK_DIR)
-
-  #message(STATUS "WINSDK_DIR = " ${WINSDK_DIR})
-  #message(STATUS "WINSDK_VERSION = " ${WINSDK_VERSION})
-
-  IF(NOT WINSDK_DIR)
-    # Use Windows SDK versions installed with VC++ when possible
-    IF(MSVC12)
-      SET(WINSDK_VERSION "8.1")
-    ELSEIF(MSVC11)
-      SET(WINSDK_VERSION "8.0A")
-    ELSEIF(MSVC10)
-      IF(NOT TARGET_X64 OR NOT MSVC_EXPRESS)
-        SET(WINSDK_VERSION "7.0A")
-      ENDIF(NOT TARGET_X64 OR NOT MSVC_EXPRESS)
-    ELSEIF(MSVC90)
-      IF(NOT MSVC_EXPRESS)
-        SET(WINSDK_VERSION "6.0A")
-      ENDIF(NOT MSVC_EXPRESS)
-    ELSEIF(MSVC80)
-      IF(NOT MSVC_EXPRESS)
-        # TODO: fix this version
-        SET(WINSDK_VERSION "5.2A")
-      ENDIF(NOT MSVC_EXPRESS)
-    ELSE(MSVC12)
-      MESSAGE(FATAL_ERROR "Your compiler is either too old or too recent, please update this CMake module.")
-    ENDIF(MSVC12)
-
-    # Use installed Windows SDK
-    IF(NOT WINSDK_VERSION)
-      IF(WINSDK8.1_FOUND)
-        SET(WINSDK_VERSION "8.1")
-      ELSEIF(WINSDK8.0_FOUND)
-        SET(WINSDK_VERSION "8.0")
-      ELSEIF(WINSDK7.1_FOUND)
-        SET(WINSDK_VERSION "7.1")
-      ELSEIF(WINSDK7.0_FOUND)
-        SET(WINSDK_VERSION "7.0")
-      ELSEIF(WINSDK6.1_FOUND)
-        SET(WINSDK_VERSION "6.1")
-      ELSEIF(WINSDK6.0_FOUND)
-        SET(WINSDK_VERSION "6.0")
-      ELSE(WINSDK8.1_FOUND)
-        MESSAGE(FATAL_ERROR "You have no compatible Windows SDK installed.")
-      ENDIF(WINSDK8.1_FOUND)
-    ENDIF(NOT WINSDK_VERSION)
-
-    # Look for correct registered Windows SDK version
-    FOREACH(_VERSION ${WINSDK_DETECTED_VERSIONS})
-      IF(WINSDK_VERSION STREQUAL _VERSION)
-        SET(WINSDK_VERSION_FULL "${WINSDK${WINSDK_VERSION}_VERSION_FULL}")
-        SET(WINSDK_DIR "${WINSDK${WINSDK_VERSION}_DIR}")
-        BREAK()
-      ENDIF(WINSDK_VERSION STREQUAL _VERSION)
-    ENDFOREACH(_VERSION)
-  ENDIF(NOT WINSDK_DIR)
-ENDMACRO(USE_CURRENT_WINSDK)
-
-IF(WINSDK_VERSION STREQUAL "CURRENT")
-  USE_CURRENT_WINSDK()
-ELSE(WINSDK_VERSION STREQUAL "CURRENT")
-  IF(WINSDK${WINSDK_VERSION}_FOUND)
-    SET(WINSDK_VERSION_FULL "${WINSDK${WINSDK_VERSION}_VERSION_FULL}")
-    SET(WINSDK_DIR "${WINSDK${WINSDK_VERSION}_DIR}")
-  ELSE(WINSDK${WINSDK_VERSION}_FOUND)
-    USE_CURRENT_WINSDK()
-  ENDIF(WINSDK${WINSDK_VERSION}_FOUND)
-ENDIF(WINSDK_VERSION STREQUAL "CURRENT")
-
-IF(WINSDK_DIR)
-  MESSAGE(STATUS "Using Windows SDK ${WINSDK_VERSION}")
-ELSE(WINSDK_DIR)
-  MESSAGE(FATAL_ERROR "Unable to find Windows SDK!")
-ENDIF(WINSDK_DIR)
-
-# directory where Win32 headers are found
-FIND_PATH(WINSDK_INCLUDE_DIR Windows.h
-  HINTS
-  ${WINSDK_DIR}/Include/um
-  ${WINSDK_DIR}/Include
+set(_winsdk_win10vers
+  10.0.17133.0 # Redstone 4 aka Win10 1803 "April 1018 Update"
+  10.0.16299.0 # Redstone 3 aka Win10 1709 "Fall Creators Update"
+  10.0.15063.0 # Redstone 2 aka Win10 1703 "Creators Update"
+  10.0.14393.0 # Redstone aka Win10 1607 "Anniversary Update"
+  10.0.10586.0 # TH2 aka Win10 1511
+  10.0.10240.0 # Win10 RTM
+  10.0.10150.0 # just ucrt
+  10.0.10056.0
 )
 
-# directory where DirectX headers are found
-FIND_PATH(WINSDK_SHARED_INCLUDE_DIR d3d9.h
-  HINTS
-  ${WINSDK_DIR}/Include/shared
-  ${WINSDK_DIR}/Include
-)
+if(WindowsSDK_FIND_COMPONENTS MATCHES "tools")
+  set(_WINDOWSSDK_IGNOREMSVC ON)
+  _winsdk_announce("Checking for tools from Windows/Platform SDKs...")
+else()
+  set(_WINDOWSSDK_IGNOREMSVC OFF)
+  _winsdk_announce("Checking for Windows/Platform SDKs...")
+endif()
 
-# directory where all libraries are found
-FIND_PATH(WINSDK_LIBRARY_DIR ComCtl32.lib
-  HINTS
-  ${WINSDK_DIR}/Lib/winv6.3/um/${WINSDK8_SUFFIX}
-  ${WINSDK_DIR}/Lib/win8/um/${WINSDK8_SUFFIX}
-  ${WINSDK_DIR}/Lib/${WINSDK_SUFFIX}
-)
+# Appends to the three main pre-output lists used only if the path exists
+# and is not already in the list.
+function(_winsdk_conditional_append _vername _build _path)
+  if(("${_path}" MATCHES "registry") OR (NOT EXISTS "${_path}"))
+    # Path invalid - do not add
+    return()
+  endif()
+  list(FIND _win_sdk_dirs "${_path}" _win_sdk_idx)
+  if(_win_sdk_idx GREATER -1)
+    # Path already in list - do not add
+    return()
+  endif()
+  _winsdk_announce( " - ${_vername}, Build ${_build} @ ${_path}")
+  # Not yet in the list, so we'll add it
+  list(APPEND _win_sdk_dirs "${_path}")
+  set(_win_sdk_dirs "${_win_sdk_dirs}" CACHE INTERNAL "" FORCE)
+  list(APPEND
+    _win_sdk_versanddirs
+    "${_vername}"
+    "${_path}")
+  set(_win_sdk_versanddirs "${_win_sdk_versanddirs}" CACHE INTERNAL "" FORCE)
+  list(APPEND
+    _win_sdk_buildsanddirs
+    "${_build}"
+    "${_path}")
+  set(_win_sdk_buildsanddirs "${_win_sdk_buildsanddirs}" CACHE INTERNAL "" FORCE)
+endfunction()
 
-# signtool is used to sign executables
-FIND_PROGRAM(WINSDK_SIGNTOOL signtool
-  HINTS
-  ${WINSDK_DIR}/Bin/x86
-  ${WINSDK_DIR}/Bin
-)
+# Appends to the "preferred SDK" lists only if the path exists
+function(_winsdk_conditional_append_preferred _info _path)
+  if(("${_path}" MATCHES "registry") OR (NOT EXISTS "${_path}"))
+    # Path invalid - do not add
+    return()
+  endif()
 
-# midl is used to generate IDL interfaces
-FIND_PROGRAM(WINSDK_MIDL midl
-  HINTS
-  ${WINSDK_DIR}/Bin/x86
-  ${WINSDK_DIR}/Bin
-)
+  get_filename_component(_path "${_path}" ABSOLUTE)
 
-IF(WINSDK_INCLUDE_DIR)
-  SET(WINSDK_FOUND ON)
-  SET(WINSDK_INCLUDE_DIRS ${WINSDK_INCLUDE_DIR} ${WINSDK_SHARED_INCLUDE_DIR})
-  SET(CMAKE_LIBRARY_PATH ${WINSDK_LIBRARY_DIR} ${CMAKE_LIBRARY_PATH})
-  INCLUDE_DIRECTORIES(${WINSDK_INCLUDE_DIRS})
+  list(FIND _win_sdk_preferred_sdk_dirs "${_path}" _win_sdk_idx)
+  if(_win_sdk_idx GREATER -1)
+    # Path already in list - do not add
+    return()
+  endif()
+  _winsdk_announce( " - Found \"preferred\" SDK ${_info} @ ${_path}")
+  # Not yet in the list, so we'll add it
+  list(APPEND _win_sdk_preferred_sdk_dirs "${_path}")
+  set(_win_sdk_preferred_sdk_dirs "${_win_sdk_dirs}" CACHE INTERNAL "" FORCE)
 
-  # Fix for using Windows SDK 7.1 with Visual C++ 2012
-  IF(WINSDK_VERSION STREQUAL "7.1" AND MSVC11)
-    ADD_DEFINITIONS(-D_USING_V110_SDK71_)
-  ENDIF(WINSDK_VERSION STREQUAL "7.1" AND MSVC11)
-ELSE(WINSDK_INCLUDE_DIR)
-  IF(NOT WindowsSDK_FIND_QUIETLY)
-    MESSAGE(STATUS "Warning: Unable to find Windows SDK!")
-  ENDIF(NOT WindowsSDK_FIND_QUIETLY)
-ENDIF(WINSDK_INCLUDE_DIR)
+  # Just in case we somehow missed it:
+  _winsdk_conditional_append("${_info}" "" "${_path}")
+endfunction()
+
+# Given a version like v7.0A, looks for an SDK in the registry under "Microsoft SDKs".
+# If the given version might be in both HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows
+# and HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows Kits\\Installed Roots aka "Windows Kits",
+# use this macro first, since these registry keys usually have more information.
+#
+# Pass a "default" build number as an extra argument in case we can't find it.
+function(_winsdk_check_microsoft_sdks_registry _winsdkver)
+  set(SDKKEY "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows\\${_winsdkver}")
+  get_filename_component(_sdkdir
+    "[${SDKKEY};InstallationFolder]"
+    ABSOLUTE)
+
+  set(_sdkname "Windows SDK ${_winsdkver}")
+
+  # Default build number passed as extra argument
+  set(_build ${ARGN})
+  # See if the registry holds a Microsoft-mutilated, err, designated, product name
+  # (just using get_filename_component to execute the registry lookup)
+  get_filename_component(_sdkproductname
+    "[${SDKKEY};ProductName]"
+    NAME)
+  if(NOT "${_sdkproductname}" MATCHES "registry")
+    # Got a product name
+    set(_sdkname "${_sdkname} (${_sdkproductname})")
+  endif()
+
+  # try for a version to augment our name
+  # (just using get_filename_component to execute the registry lookup)
+  get_filename_component(_sdkver
+    "[${SDKKEY};ProductVersion]"
+    NAME)
+  if(NOT "${_sdkver}" MATCHES "registry" AND NOT MATCHES)
+    # Got a version
+    if(NOT "${_sdkver}" MATCHES "\\.\\.")
+      # and it's not an invalid one with two dots in it:
+      # use to override the default build
+      set(_build ${_sdkver})
+      if(NOT "${_sdkname}" MATCHES "${_sdkver}")
+        # Got a version that's not already in the name, let's use it to improve our name.
+        set(_sdkname "${_sdkname} (${_sdkver})")
+      endif()
+    endif()
+  endif()
+  _winsdk_conditional_append("${_sdkname}" "${_build}" "${_sdkdir}")
+endfunction()
+
+# Given a name for identification purposes, the build number, and a key (technically a "value name")
+# corresponding to a Windows SDK packaged as a "Windows Kit", look for it
+# in HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows Kits\\Installed Roots
+# Note that the key or "value name" tends to be something weird like KitsRoot81 -
+# no easy way to predict, just have to observe them in the wild.
+# Doesn't hurt to also try _winsdk_check_microsoft_sdks_registry for these:
+# sometimes you get keys in both parts of the registry (in the wow64 portion especially),
+# and the non-"Windows Kits" location is often more descriptive.
+function(_winsdk_check_windows_kits_registry _winkit_name _winkit_build _winkit_key)
+  get_filename_component(_sdkdir
+    "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows Kits\\Installed Roots;${_winkit_key}]"
+    ABSOLUTE)
+  _winsdk_conditional_append("${_winkit_name}" "${_winkit_build}" "${_sdkdir}")
+endfunction()
+
+# Given a name for identification purposes and the build number
+# corresponding to a Windows 10 SDK packaged as a "Windows Kit", look for it
+# in HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows Kits\\Installed Roots
+# Doesn't hurt to also try _winsdk_check_microsoft_sdks_registry for these:
+# sometimes you get keys in both parts of the registry (in the wow64 portion especially),
+# and the non-"Windows Kits" location is often more descriptive.
+function(_winsdk_check_win10_kits _winkit_build)
+  get_filename_component(_sdkdir
+    "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows Kits\\Installed Roots;KitsRoot10]"
+    ABSOLUTE)
+  if(("${_sdkdir}" MATCHES "registry") OR (NOT EXISTS "${_sdkdir}"))
+    return() # not found
+  endif()
+  if(EXISTS "${_sdkdir}/Include/${_winkit_build}/um")
+    _winsdk_conditional_append("Windows Kits 10 (Build ${_winkit_build})" "${_winkit_build}" "${_sdkdir}")
+  endif()
+endfunction()
+
+# Given a name for indentification purposes, the build number, and the associated package GUID,
+# look in the registry under both HKLM and HKCU in \\SOFTWARE\\Microsoft\\MicrosoftSDK\\InstalledSDKs\\
+# for that guid and the SDK it points to.
+function(_winsdk_check_platformsdk_registry _platformsdkname _build _platformsdkguid)
+  foreach(_winsdk_hive HKEY_LOCAL_MACHINE HKEY_CURRENT_USER)
+    get_filename_component(_sdkdir
+      "[${_winsdk_hive}\\SOFTWARE\\Microsoft\\MicrosoftSDK\\InstalledSDKs\\${_platformsdkguid};Install Dir]"
+      ABSOLUTE)
+    _winsdk_conditional_append("${_platformsdkname} (${_build})" "${_build}" "${_sdkdir}")
+  endforeach()
+endfunction()
+
+###
+# Detect toolchain information: to know whether it's OK to use Vista+ only SDKs
+###
+set(_winsdk_vistaonly_ok OFF)
+if(MSVC AND NOT _WINDOWSSDK_IGNOREMSVC)
+  # VC 10 and older has broad target support
+  if(MSVC_VERSION LESS 1700)
+    # VC 11 by default targets Vista and later only, so we can add a few more SDKs that (might?) only work on vista+
+  elseif("${CMAKE_VS_PLATFORM_TOOLSET}" MATCHES "_xp")
+    # This is the XP-compatible v110+ toolset
+  elseif("${CMAKE_VS_PLATFORM_TOOLSET}" STREQUAL "v100" OR "${CMAKE_VS_PLATFORM_TOOLSET}" STREQUAL "v90")
+    # This is the VS2010/VS2008 toolset
+  else()
+    # OK, we're VC11 or newer and not using a backlevel or XP-compatible toolset.
+    # These versions have no XP (and possibly Vista pre-SP1) support
+    set(_winsdk_vistaonly_ok ON)
+    if(_WINDOWSSDK_ANNOUNCE AND NOT _WINDOWSSDK_VISTAONLY_PESTERED)
+      set(_WINDOWSSDK_VISTAONLY_PESTERED ON CACHE INTERNAL "" FORCE)
+      message(STATUS "FindWindowsSDK: Detected Visual Studio 2012 or newer, not using the _xp toolset variant: including SDK versions that drop XP support in search!")
+    endif()
+  endif()
+endif()
+if(_WINDOWSSDK_IGNOREMSVC)
+  set(_winsdk_vistaonly_ok ON)
+endif()
+
+###
+# MSVC version checks - keeps messy conditionals in one place
+# (messy because of _WINDOWSSDK_IGNOREMSVC)
+###
+set(_winsdk_msvc_greater_1200 OFF)
+if(_WINDOWSSDK_IGNOREMSVC OR (MSVC AND (MSVC_VERSION GREATER 1200)))
+  set(_winsdk_msvc_greater_1200 ON)
+endif()
+# Newer than VS .NET/VS Toolkit 2003
+set(_winsdk_msvc_greater_1310 OFF)
+if(_WINDOWSSDK_IGNOREMSVC OR (MSVC AND (MSVC_VERSION GREATER 1310)))
+  set(_winsdk_msvc_greater_1310 ON)
+endif()
+
+# VS2005/2008
+set(_winsdk_msvc_less_1600 OFF)
+if(_WINDOWSSDK_IGNOREMSVC OR (MSVC AND (MSVC_VERSION LESS 1600)))
+  set(_winsdk_msvc_less_1600 ON)
+endif()
+
+# VS2013+
+set(_winsdk_msvc_not_less_1800 OFF)
+if(_WINDOWSSDK_IGNOREMSVC OR (MSVC AND (NOT MSVC_VERSION LESS 1800)))
+  set(_winsdk_msvc_not_less_1800 ON)
+endif()
+
+###
+# START body of find module
+###
+if(_winsdk_msvc_greater_1310) # Newer than VS .NET/VS Toolkit 2003
+  ###
+  # Look for "preferred" SDKs
+  ###
+
+  # Environment variable for SDK dir
+  if(EXISTS "$ENV{WindowsSDKDir}" AND (NOT "$ENV{WindowsSDKDir}" STREQUAL ""))
+    _winsdk_conditional_append_preferred("WindowsSDKDir environment variable" "$ENV{WindowsSDKDir}")
+  endif()
+
+  if(_winsdk_msvc_less_1600)
+    # Per-user current Windows SDK for VS2005/2008
+    get_filename_component(_sdkdir
+      "[HKEY_CURRENT_USER\\Software\\Microsoft\\Microsoft SDKs\\Windows;CurrentInstallFolder]"
+      ABSOLUTE)
+    _winsdk_conditional_append_preferred("Per-user current Windows SDK" "${_sdkdir}")
+
+    # System-wide current Windows SDK for VS2005/2008
+    get_filename_component(_sdkdir
+      "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows;CurrentInstallFolder]"
+      ABSOLUTE)
+    _winsdk_conditional_append_preferred("System-wide current Windows SDK" "${_sdkdir}")
+  endif()
+
+  ###
+  # Begin the massive list of SDK searching!
+  ###
+  if(_winsdk_vistaonly_ok AND _winsdk_msvc_not_less_1800)
+    # These require at least Visual Studio 2013 (VC12)
+
+    _winsdk_check_microsoft_sdks_registry(v10.0A)
+
+    # Windows Software Development Kit (SDK) for Windows 10
+    # Several different versions living in the same directory - if nothing else we can assume RTM (10240)
+    _winsdk_check_microsoft_sdks_registry(v10.0 10.0.10240.0)
+    foreach(_win10build ${_winsdk_win10vers})
+      _winsdk_check_win10_kits(${_win10build})
+    endforeach()
+  endif() # vista-only and 2013+
+
+  # Included in Visual Studio 2013
+  # Includes the v120_xp toolset
+  _winsdk_check_microsoft_sdks_registry(v8.1A 8.1.51636)
+
+  if(_winsdk_vistaonly_ok AND _winsdk_msvc_not_less_1800)
+    # Windows Software Development Kit (SDK) for Windows 8.1
+    # http://msdn.microsoft.com/en-gb/windows/desktop/bg162891
+    _winsdk_check_microsoft_sdks_registry(v8.1 8.1.25984.0)
+    _winsdk_check_windows_kits_registry("Windows Kits 8.1" 8.1.25984.0 KitsRoot81)
+  endif() # vista-only and 2013+
+
+  if(_winsdk_vistaonly_ok)
+    # Included in Visual Studio 2012
+    _winsdk_check_microsoft_sdks_registry(v8.0A 8.0.50727)
+
+    # Microsoft Windows SDK for Windows 8 and .NET Framework 4.5
+    # This is the first version to also include the DirectX SDK
+    # http://msdn.microsoft.com/en-US/windows/desktop/hh852363.aspx
+    _winsdk_check_microsoft_sdks_registry(v8.0 6.2.9200.16384)
+    _winsdk_check_windows_kits_registry("Windows Kits 8.0" 6.2.9200.16384 KitsRoot)
+  endif() # vista-only
+
+  # Included with VS 2012 Update 1 or later
+  # Introduces v110_xp toolset
+  _winsdk_check_microsoft_sdks_registry(v7.1A 7.1.51106)
+  if(_winsdk_vistaonly_ok)
+    # Microsoft Windows SDK for Windows 7 and .NET Framework 4
+    # http://www.microsoft.com/downloads/en/details.aspx?FamilyID=6b6c21d2-2006-4afa-9702-529fa782d63b
+    _winsdk_check_microsoft_sdks_registry(v7.1 7.1.7600.0.30514)
+  endif() # vista-only
+
+  # Included with VS 2010
+  _winsdk_check_microsoft_sdks_registry(v7.0A 6.1.7600.16385)
+
+  # Windows SDK for Windows 7 and .NET Framework 3.5 SP1
+  # Works with VC9
+  # http://www.microsoft.com/en-us/download/details.aspx?id=18950
+  _winsdk_check_microsoft_sdks_registry(v7.0 6.1.7600.16385)
+
+  # Two versions call themselves "v6.1":
+  # Older:
+  # Windows Vista Update & .NET 3.0 SDK
+  # http://www.microsoft.com/en-us/download/details.aspx?id=14477
+
+  # Newer:
+  # Windows Server 2008 & .NET 3.5 SDK
+  # may have broken VS9SP1? they recommend v7.0 instead, or a KB...
+  # http://www.microsoft.com/en-us/download/details.aspx?id=24826
+  _winsdk_check_microsoft_sdks_registry(v6.1 6.1.6000.16384.10)
+
+  # Included in VS 2008
+  _winsdk_check_microsoft_sdks_registry(v6.0A 6.1.6723.1)
+
+  # Microsoft Windows Software Development Kit for Windows Vista and .NET Framework 3.0 Runtime Components
+  # http://blogs.msdn.com/b/stanley/archive/2006/11/08/microsoft-windows-software-development-kit-for-windows-vista-and-net-framework-3-0-runtime-components.aspx
+  _winsdk_check_microsoft_sdks_registry(v6.0 6.0.6000.16384)
+endif()
+
+# Let's not forget the Platform SDKs, which sometimes are useful!
+if(_winsdk_msvc_greater_1200)
+  _winsdk_check_platformsdk_registry("Microsoft Platform SDK for Windows Server 2003 R2" "5.2.3790.2075.51" "D2FF9F89-8AA2-4373-8A31-C838BF4DBBE1")
+  _winsdk_check_platformsdk_registry("Microsoft Platform SDK for Windows Server 2003 SP1" "5.2.3790.1830.15" "8F9E5EF3-A9A5-491B-A889-C58EFFECE8B3")
+endif()
+###
+# Finally, look for "preferred" SDKs
+###
+if(_winsdk_msvc_greater_1310) # Newer than VS .NET/VS Toolkit 2003
+
+
+  # Environment variable for SDK dir
+  if(EXISTS "$ENV{WindowsSDKDir}" AND (NOT "$ENV{WindowsSDKDir}" STREQUAL ""))
+    _winsdk_conditional_append_preferred("WindowsSDKDir environment variable" "$ENV{WindowsSDKDir}")
+  endif()
+
+  if(_winsdk_msvc_less_1600)
+    # Per-user current Windows SDK for VS2005/2008
+    get_filename_component(_sdkdir
+      "[HKEY_CURRENT_USER\\Software\\Microsoft\\Microsoft SDKs\\Windows;CurrentInstallFolder]"
+      ABSOLUTE)
+    _winsdk_conditional_append_preferred("Per-user current Windows SDK" "${_sdkdir}")
+
+    # System-wide current Windows SDK for VS2005/2008
+    get_filename_component(_sdkdir
+      "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows;CurrentInstallFolder]"
+      ABSOLUTE)
+    _winsdk_conditional_append_preferred("System-wide current Windows SDK" "${_sdkdir}")
+  endif()
+endif()
+
+
+function(windowssdk_name_lookup _dir _outvar)
+  list(FIND _win_sdk_versanddirs "${_dir}" _diridx)
+  math(EXPR _idx "${_diridx} - 1")
+  if(${_idx} GREATER -1)
+    list(GET _win_sdk_versanddirs ${_idx} _ret)
+  else()
+    set(_ret "NOTFOUND")
+  endif()
+  set(${_outvar} "${_ret}" PARENT_SCOPE)
+endfunction()
+
+function(windowssdk_build_lookup _dir _outvar)
+  list(FIND _win_sdk_buildsanddirs "${_dir}" _diridx)
+  math(EXPR _idx "${_diridx} - 1")
+  if(${_idx} GREATER -1)
+    list(GET _win_sdk_buildsanddirs ${_idx} _ret)
+  else()
+    set(_ret "NOTFOUND")
+  endif()
+  set(${_outvar} "${_ret}" PARENT_SCOPE)
+endfunction()
+
+# If we found something...
+if(_win_sdk_dirs)
+  list(GET _win_sdk_dirs 0 WINDOWSSDK_LATEST_DIR)
+  windowssdk_name_lookup("${WINDOWSSDK_LATEST_DIR}"
+    WINDOWSSDK_LATEST_NAME)
+  set(WINDOWSSDK_DIRS ${_win_sdk_dirs})
+
+  # Fallback, in case no preference found.
+  set(WINDOWSSDK_PREFERRED_DIR "${WINDOWSSDK_LATEST_DIR}")
+  set(WINDOWSSDK_PREFERRED_NAME "${WINDOWSSDK_LATEST_NAME}")
+  set(WINDOWSSDK_PREFERRED_FIRST_DIRS ${WINDOWSSDK_DIRS})
+  set(WINDOWSSDK_FOUND_PREFERENCE OFF)
+endif()
+
+# If we found indications of a user preference...
+if(_win_sdk_preferred_sdk_dirs)
+  list(GET _win_sdk_preferred_sdk_dirs 0 WINDOWSSDK_PREFERRED_DIR)
+  windowssdk_name_lookup("${WINDOWSSDK_PREFERRED_DIR}"
+    WINDOWSSDK_PREFERRED_NAME)
+  set(WINDOWSSDK_PREFERRED_FIRST_DIRS
+    ${_win_sdk_preferred_sdk_dirs}
+    ${_win_sdk_dirs})
+  list(REMOVE_DUPLICATES WINDOWSSDK_PREFERRED_FIRST_DIRS)
+  set(WINDOWSSDK_FOUND_PREFERENCE ON)
+endif()
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(WindowsSDK
+  "No compatible version of the Windows SDK or Platform SDK found."
+  WINDOWSSDK_DIRS)
+
+if(WINDOWSSDK_FOUND)
+  # Internal: Architecture-appropriate library directory names.
+  if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "ARM")
+    if(CMAKE_SIZEOF_VOID_P MATCHES "8")
+      # Only supported in Win10 SDK and up.
+      set(_winsdk_arch8 arm64) # what the WDK for Win8+ calls this architecture
+    else()
+      set(_winsdk_archbare /arm) # what the architecture used to be called in oldest SDKs
+      set(_winsdk_arch arm) # what the architecture used to be called
+      set(_winsdk_arch8 arm) # what the WDK for Win8+ calls this architecture
+    endif()
+  else()
+    if(CMAKE_SIZEOF_VOID_P MATCHES "8")
+      set(_winsdk_archbare /x64) # what the architecture used to be called in oldest SDKs
+      set(_winsdk_arch amd64) # what the architecture used to be called
+      set(_winsdk_arch8 x64) # what the WDK for Win8+ calls this architecture
+    else()
+      set(_winsdk_archbare ) # what the architecture used to be called in oldest SDKs
+      set(_winsdk_arch i386) # what the architecture used to be called
+      set(_winsdk_arch8 x86) # what the WDK for Win8+ calls this architecture
+    endif()
+  endif()
+
+  function(get_windowssdk_from_component _component _var)
+    get_filename_component(_component "${_component}" ABSOLUTE)
+    file(TO_CMAKE_PATH "${_component}" _component)
+    foreach(_sdkdir ${WINDOWSSDK_DIRS})
+      get_filename_component(_sdkdir "${_sdkdir}" ABSOLUTE)
+      string(LENGTH "${_sdkdir}" _sdklen)
+      file(RELATIVE_PATH _rel "${_sdkdir}" "${_component}")
+      # If we don't have any "parent directory" items...
+      if(NOT "${_rel}" MATCHES "[.][.]")
+        set(${_var} "${_sdkdir}" PARENT_SCOPE)
+        return()
+      endif()
+    endforeach()
+    # Fail.
+    set(${_var} "NOTFOUND" PARENT_SCOPE)
+  endfunction()
+  function(get_windowssdk_library_dirs _winsdk_dir _var)
+    set(_dirs)
+    set(_suffixes
+      "lib${_winsdk_archbare}" # SDKs like 7.1A
+      "lib/${_winsdk_arch}" # just because some SDKs have x86 dir and root dir
+      "lib/w2k/${_winsdk_arch}" # Win2k min requirement
+      "lib/wxp/${_winsdk_arch}" # WinXP min requirement
+      "lib/wnet/${_winsdk_arch}" # Win Server 2003 min requirement
+      "lib/wlh/${_winsdk_arch}"
+      "lib/wlh/um/${_winsdk_arch8}" # Win Vista ("Long Horn") min requirement
+      "lib/win7/${_winsdk_arch}"
+      "lib/win7/um/${_winsdk_arch8}" # Win 7 min requirement
+    )
+    foreach(_ver
+      wlh # Win Vista ("Long Horn") min requirement
+      win7 # Win 7 min requirement
+      win8 # Win 8 min requirement
+      winv6.3 # Win 8.1 min requirement
+    )
+
+      list(APPEND _suffixes
+        "lib/${_ver}/${_winsdk_arch}"
+        "lib/${_ver}/um/${_winsdk_arch8}"
+        "lib/${_ver}/km/${_winsdk_arch8}"
+      )
+    endforeach()
+
+    # Look for WDF libraries in Win10+ SDK
+    foreach(_mode umdf kmdf)
+      file(GLOB _wdfdirs RELATIVE "${_winsdk_dir}" "${_winsdk_dir}/lib/wdf/${_mode}/${_winsdk_arch8}/*")
+      if(_wdfdirs)
+        list(APPEND _suffixes ${_wdfdirs})
+      endif()
+    endforeach()
+
+    # Look in each Win10+ SDK version for the components
+    foreach(_win10ver ${_winsdk_win10vers})
+      foreach(_component um km ucrt mmos)
+        list(APPEND _suffixes "lib/${_win10ver}/${_component}/${_winsdk_arch8}")
+      endforeach()
+    endforeach()
+
+    foreach(_suffix ${_suffixes})
+      # Check to see if a library actually exists here.
+      file(GLOB _libs "${_winsdk_dir}/${_suffix}/*.lib")
+      if(_libs)
+        list(APPEND _dirs "${_winsdk_dir}/${_suffix}")
+      endif()
+    endforeach()
+    if("${_dirs}" STREQUAL "")
+      set(_dirs NOTFOUND)
+    else()
+      list(REMOVE_DUPLICATES _dirs)
+    endif()
+    set(${_var} ${_dirs} PARENT_SCOPE)
+  endfunction()
+  function(get_windowssdk_include_dirs _winsdk_dir _var)
+    set(_dirs)
+
+    set(_subdirs shared um winrt km wdf mmos ucrt)
+    set(_suffixes Include)
+
+    foreach(_dir ${_subdirs})
+      list(APPEND _suffixes "Include/${_dir}")
+    endforeach()
+
+    foreach(_ver ${_winsdk_win10vers})
+      foreach(_dir ${_subdirs})
+        list(APPEND _suffixes "Include/${_ver}/${_dir}")
+      endforeach()
+    endforeach()
+
+    foreach(_suffix ${_suffixes})
+      # Check to see if a header file actually exists here.
+      file(GLOB _headers "${_winsdk_dir}/${_suffix}/*.h")
+      if(_headers)
+        list(APPEND _dirs "${_winsdk_dir}/${_suffix}")
+      endif()
+    endforeach()
+    if("${_dirs}" STREQUAL "")
+      set(_dirs NOTFOUND)
+    else()
+      list(REMOVE_DUPLICATES _dirs)
+    endif()
+    set(${_var} ${_dirs} PARENT_SCOPE)
+  endfunction()
+  function(get_windowssdk_library_dirs_multiple _var)
+    set(_dirs)
+    foreach(_sdkdir ${ARGN})
+      get_windowssdk_library_dirs("${_sdkdir}" _current_sdk_libdirs)
+      if(_current_sdk_libdirs)
+        list(APPEND _dirs ${_current_sdk_libdirs})
+      endif()
+    endforeach()
+    if("${_dirs}" STREQUAL "")
+      set(_dirs NOTFOUND)
+    else()
+      list(REMOVE_DUPLICATES _dirs)
+    endif()
+    set(${_var} ${_dirs} PARENT_SCOPE)
+  endfunction()
+  function(get_windowssdk_include_dirs_multiple _var)
+    set(_dirs)
+    foreach(_sdkdir ${ARGN})
+      get_windowssdk_include_dirs("${_sdkdir}" _current_sdk_incdirs)
+      if(_current_sdk_libdirs)
+        list(APPEND _dirs ${_current_sdk_incdirs})
+      endif()
+    endforeach()
+    if("${_dirs}" STREQUAL "")
+      set(_dirs NOTFOUND)
+    else()
+      list(REMOVE_DUPLICATES _dirs)
+    endif()
+    set(${_var} ${_dirs} PARENT_SCOPE)
+  endfunction()
+endif()

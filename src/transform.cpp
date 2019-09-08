@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "camera.h"
 
 #include <stdio.h>
+#include <string.h>
 
 //#ifndef GL_MULTISAMPLE
 //#define GL_MULTISAMPLE  0x809D

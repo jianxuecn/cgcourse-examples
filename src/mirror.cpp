@@ -43,8 +43,8 @@ struct Mirror {
                Vectorf hdlb(halfDiagLB), hdrb(halfDiagRB);
                hdlb.Normalize();
                hdrb.Normalize();
-               hdlb *= abs(hl);
-               hdrb *= abs(hl);
+			   hdlb *= hl > 0 ? hl : -hl; // abs(hl);
+               hdrb *= hl > 0 ? hl : -hl; //abs(hl);
                hdlb[3] = 0;
                hdrb[3] = 0;
 

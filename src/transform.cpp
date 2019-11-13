@@ -319,11 +319,11 @@ void display(void)
         Matrixf m1, m2, m3;
 
         m1.RotateYMatrix(g_heading);
-        m2.RotateZMatrix(g_pitch);
-        m3.RotateXMatrix(g_bank);
+        m2.RotateXMatrix(g_pitch);
+        m3.RotateZMatrix(g_bank);
 
-        g_rotm = m1 * m2 * m3;
-        //g_rotm = m3 * m2 * m1;
+        //g_rotm = m1 * m2 * m3;
+        g_rotm = m3 * m2 * m1;
 
     }
 

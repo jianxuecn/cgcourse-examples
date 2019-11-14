@@ -322,7 +322,8 @@ if(_winsdk_msvc_greater_1310) # Newer than VS .NET/VS Toolkit 2003
 
     # Windows Software Development Kit (SDK) for Windows 10
     # Several different versions living in the same directory - if nothing else we can assume RTM (10240)
-    _winsdk_check_microsoft_sdks_registry(v10.0 10.0.10240.0)
+    _winsdk_check_microsoft_sdks_registry(v10.0 10.0.17763.0)
+    _winsdk_check_windows_kits_registry("Windows Kits 10.0" 10.0.17763.0 KitsRoot10)
     foreach(_win10build ${_winsdk_win10vers})
       _winsdk_check_win10_kits(${_win10build})
     endforeach()

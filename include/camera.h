@@ -22,7 +22,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef __camera_h
 #define __camera_h
 
-#include "glinc.h"
+#if defined(WIN32)
+#include <GL/gl.h>
+#elif defined(__APPLE__)
+#include <OpenGL/gl.h>
+#else
+#include <GL/gl.h>
+#endif
+
 #include "matrix.h"
 
 template <typename T> class Camera

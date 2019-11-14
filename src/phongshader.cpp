@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <stdlib.h>
 #include <GL/glew.h>
-#include "glinc.h"
+#include <GL/freeglut.h>
 
 #include "trackball.h"
 #include "camera.h"

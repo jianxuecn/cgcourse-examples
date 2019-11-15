@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 2.6)
 if(COMMAND CMAKE_POLICY)
   cmake_policy(SET CMP0003 NEW)
+  cmake_policy(SET CMP0048 NEW)
 endif(COMMAND CMAKE_POLICY)
 
-project(cg_examples)
+project(cg_examples VERSION 1.0.0)
 
 set(CMAKE_MODULE_PATH "${cg_examples_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 set(CMAKE_INSTALL_PREFIX "${cg_examples_BINARY_DIR}/dist" CACHE PATH "cg_examples install prefix" FORCE)
@@ -13,7 +14,6 @@ find_package(FreeGLUT REQUIRED)
 
 find_package(GLEW QUIET)
 find_package(FreeImage QUIET)
-#find_package(MITK QUIET)
 find_package(assimp CONFIG QUIET)
 
 if(WIN32)
@@ -28,7 +28,7 @@ endif()
 if(assimp_CONFIG)
 set(ASSIMP_FOUND TRUE)
 get_target_property(ASSIMP_IMPLIB assimp::assimp IMPORTED_IMPLIB_RELEASE)
-message(STATUS "ASSIMP_IMPLIB=${ASSIMP_IMPLIB}")
+#message(STATUS "ASSIMP_IMPLIB=${ASSIMP_IMPLIB}")
 install_dependency_from_target(assimp::assimp)
 endif()
 endif()

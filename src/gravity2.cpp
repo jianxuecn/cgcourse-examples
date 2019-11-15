@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <time.h>
 
-#include "glinc.h"
+#include "glutinc.h"
 #include "trackball.h"
 #include "quaternion.h"
 #include "camera.h"

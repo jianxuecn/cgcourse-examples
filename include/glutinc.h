@@ -19,12 +19,11 @@
  -----------------------------------------------------------------------
  */
 
-#ifndef __glinc_h
-#define __glinc_h
+#ifndef __glutinc_h
+#define __glutinc_h
 
 #if defined(_WIN32)
 #include <GL/freeglut.h>
-#include <GL/glext.h>
 #elif defined(__APPLE__)
 #include <OpenGL/gl.h>
 #include <GLUT/glut.h>

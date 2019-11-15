@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "glinc.h"
+#include "glutinc.h"
 
 int board[3][3];  /* amount of color for each square */
 

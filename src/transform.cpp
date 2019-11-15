@@ -19,7 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -----------------------------------------------------------------------
 */
 
-#include "glinc.h"
+#include "glutinc.h"
+#include "glextinc.h"
 #include "trackball.h"
 #include "quaternion.h"
 #include "camera.h"

@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdlib.h>
-#include "glinc.h"
+#include "glutinc.h"
 
 unsigned int const MAX_CPTS = 25;
 

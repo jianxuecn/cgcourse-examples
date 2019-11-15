@@ -20,7 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdlib.h>
-#include "glinc.h"
+#include "glutinc.h"
+#include "glextinc.h"
 
 #include "camera.h"
 #include "trackball.h"

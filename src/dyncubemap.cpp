@@ -20,19 +20,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdlib.h>
-#include <GL/glut.h>
-#include <GL/glext.h>
 #include <iostream>
+#include <vector>
 
+#include "glinc.h"
 #include "trackball.h"
 #include "quaternion.h"
 #include "camera.h"
 #include "cpucounter.h"
 
-#include "mitkBMPReader.h"
-#include "mitkVolume.h"
-#include "mitkPLYReader.h"
-#include "mitkTriangleMesh.h"
+#include "FreeImage.h"
+
+#include "assimp/cimport.h"
+#include "assimp/scene.h"
+#include "assimp/postprocess.h"
 
 PFNGLGENFRAMEBUFFERSPROC glGenFramebuffers;
 PFNGLBINDFRAMEBUFFERPROC glBindFramebuffer;
@@ -48,6 +49,21 @@ PFNGLRENDERBUFFERSTORAGEPROC glRenderbufferStorage;
 
 PFNGLGENERATEMIPMAPEXTPROC glGenerateMipmap;
 
+struct TriangleMesh3D
+{
+    std::vector<GLfloat> vertices;
+    std::vector<GLuint> indices;
+};
+
+char const *g_cm_tex_files[] = {
+    "data/dyncubemap/cm_right.bmp",
+    "data/dyncubemap/cm_left.bmp",
+    "data/dyncubemap/cm_top.bmp",
+    "data/dyncubemap/cm_bottom.bmp",
+    "data/dyncubemap/cm_back.bmp",
+    "data/dyncubemap/cm_front.bmp",
+};
+
 GLenum g_face_target[6] = {
   GL_TEXTURE_CUBE_MAP_POSITIVE_X,
   GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
@@ -59,8 +75,8 @@ GLenum g_face_target[6] = {
 
 GLuint g_fbo;					// Our handle to the FBO
 GLuint g_depth_buffer;			// Our handle to the depth render buffer
-GLsizei g_cm_width;
-GLsizei g_cm_height;
+GLsizei g_cm_width = 128;
+GLsizei g_cm_height = 128;
 
 GLuint g_cm_texture_id[3];
 GLuint g_texture_id[6];
@@ -115,7 +131,8 @@ CPUCounter g_timer;
 Vectorf g_objpos(0.0f, 0.0f, 4.0f);
 Vectorf g_campos(0.0f, 0.0f, 5.0f);
 
-mitkMesh *g_mesh = NULL;
+aiScene const *g_ai_scene = nullptr;
+TriangleMesh3D g_triangle_mesh;
 
 void set_material()
 {
@@ -260,177 +277,179 @@ void update_wrap()
     }
 }
 
+FIBITMAP* load_image(char const *filename, int flag = 0)
+{
+    FREE_IMAGE_FORMAT fif = FreeImage_GetFileType(filename, 0);
+
+    if (fif == FIF_UNKNOWN) fif = FreeImage_GetFIFFromFilename(filename);
+    if (fif == FIF_UNKNOWN) return false;
+
+    return FreeImage_Load(fif, filename, flag);
+}
+
+bool load_texture_from_file(GLsizei &texWidth, GLsizei &texHeight, 
+                            char const *filename, GLuint texIds[3],
+                            GLenum texTarget = GL_TEXTURE_2D, GLenum faceTarget = GL_TEXTURE_2D,
+                            bool flipV = false)
+{
+    FIBITMAP *tdib = load_image(filename);
+    if (!tdib) return false;
+
+    bool status(false);
+    unsigned int bpp = FreeImage_GetBPP(tdib);
+    if (flipV) {
+        if (!FreeImage_FlipVertical(tdib)) {
+            FreeImage_Unload(tdib);
+            return false;
+        }
+    }
+
+    FIBITMAP *dib = tdib;
+    if (bpp != 24) dib = FreeImage_ConvertTo24Bits(tdib);
+
+
+    BYTE *bits = FreeImage_GetBits(dib);
+    unsigned int width = FreeImage_GetWidth(dib);
+    unsigned int height = FreeImage_GetHeight(dib);
+
+    GLenum format = FREEIMAGE_COLORORDER == FREEIMAGE_COLORORDER_BGR ? GL_BGR : GL_RGB;
+
+    //RGBQUAD *pal = FreeImage_GetPalette(dib);
+
+    if (bits != 0 && width > 0 && height > 0) {
+        status = true;									// Set The Status To TRUE
+
+        // Create Nearest Filtered Texture
+        glBindTexture(texTarget, texIds[0]);
+        glTexParameteri(texTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(texTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexImage2D(faceTarget, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, bits);
+
+        // Create Linear Filtered Texture
+        glBindTexture(texTarget, texIds[1]);
+        glTexParameteri(texTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(texTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexImage2D(faceTarget, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, bits);
+
+        // Create MipMapped Texture
+        glBindTexture(texTarget, texIds[2]);
+        glTexParameteri(texTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(texTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        gluBuild2DMipmaps(faceTarget, GL_RGB, width, height, format, GL_UNSIGNED_BYTE, bits);
+    }
+
+    if (dib != tdib) FreeImage_Unload(dib);
+
+    FreeImage_Unload(tdib);
+
+    texWidth = width;
+    texHeight = height;
+
+    return status;
+}
+
 bool load_cube_map_bg_textures()
 {
-	mitkBMPReader *reader = new mitkBMPReader();
-	reader->AddFileName("data/dyncubemap/cm_right.bmp");
-    reader->AddFileName("data/dyncubemap/cm_left.bmp");
-	reader->AddFileName("data/dyncubemap/cm_top.bmp");
-	reader->AddFileName("data/dyncubemap/cm_bottom.bmp");
-	reader->AddFileName("data/dyncubemap/cm_back.bmp");
-	reader->AddFileName("data/dyncubemap/cm_front.bmp");
+    glGenTextures(18, g_cm_bg_texture_id);
 
-	bool success = reader->Run();
-	if (success)
-	{
-		mitkVolume *teximgs = reader->GetOutput();
+    for (int loop = 0; loop < 6; ++loop)
+    {
+        GLuint texIds[3];
+        texIds[0] = g_cm_bg_texture_id[loop];
+        texIds[1] = g_cm_bg_texture_id[loop+6];
+        texIds[2] = g_cm_bg_texture_id[loop+12];
+        GLsizei w, h;
+        if (!load_texture_from_file(w, h, g_cm_tex_files[loop], texIds, GL_TEXTURE_2D, GL_TEXTURE_2D, true)) return false;
+    }
 
-		glGenTextures(18, g_cm_bg_texture_id);
-
-		for (int loop=0; loop<6; loop++)
-		{
-			// Create Nearest Filtered Texture
-			glBindTexture(GL_TEXTURE_2D, g_cm_bg_texture_id[loop]);	// Gen Tex 0 and 1
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, teximgs->GetWidth(), teximgs->GetHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, teximgs->GetSliceData(loop));
-
-			// Create Linear Filtered Texture
-			glBindTexture(GL_TEXTURE_2D, g_cm_bg_texture_id[loop+6]);	// Gen Tex 2 and 3
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, teximgs->GetWidth(), teximgs->GetHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, teximgs->GetSliceData(loop));
-
-			// Create MipMapped Texture
-			glBindTexture(GL_TEXTURE_2D, g_cm_bg_texture_id[loop+12]);	// Gen Tex 4 and 5
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
-			gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, teximgs->GetWidth(), teximgs->GetHeight(), GL_RGB, GL_UNSIGNED_BYTE, teximgs->GetSliceData(loop));
-		}
-
-		teximgs->Delete();
-	}
-
-	reader->Delete();
-	return success;
+    return true;
 }
 
 bool load_cube_map_textures()
 {
-	mitkBMPReader *reader = new mitkBMPReader();
-	reader->AddFileName("data/dyncubemap/cm_right.bmp");
-	reader->AddFileName("data/dyncubemap/cm_left.bmp");
-	reader->AddFileName("data/dyncubemap/cm_top.bmp");
-	reader->AddFileName("data/dyncubemap/cm_bottom.bmp");
-	reader->AddFileName("data/dyncubemap/cm_back.bmp");
-	reader->AddFileName("data/dyncubemap/cm_front.bmp");
+    glGenTextures(3, g_cm_texture_id);
 
-	bool success = reader->Run();
-	if (success)
-	{
-		mitkVolume *teximgs = reader->GetOutput();
-
-        g_cm_width = teximgs->GetWidth();
-        g_cm_height = teximgs->GetHeight();
-
-        glGenTextures(3, g_cm_texture_id);
-
-		for (int loop=0; loop<6; loop++)
-		{
-				// Create Nearest Filtered Texture
-				glBindTexture(GL_TEXTURE_CUBE_MAP, g_cm_texture_id[0]);
-				glTexParameteri(GL_TEXTURE_CUBE_MAP,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-				glTexParameteri(GL_TEXTURE_CUBE_MAP,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-				glTexImage2D(g_face_target[loop], 0, GL_RGB, g_cm_width, g_cm_height, 0, GL_RGB, GL_UNSIGNED_BYTE, teximgs->GetSliceData(loop));
-				
-				// Create Linear Filtered Texture
-				glBindTexture(GL_TEXTURE_CUBE_MAP, g_cm_texture_id[1]);
-				glTexParameteri(GL_TEXTURE_CUBE_MAP,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-				glTexParameteri(GL_TEXTURE_CUBE_MAP,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-				glTexImage2D(g_face_target[loop], 0, GL_RGB, g_cm_width, g_cm_height, 0, GL_RGB, GL_UNSIGNED_BYTE, teximgs->GetSliceData(loop));
-				
-				// Create MipMapped Texture
-				glBindTexture(GL_TEXTURE_CUBE_MAP, g_cm_texture_id[2]);
-				glTexParameteri(GL_TEXTURE_CUBE_MAP,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-				glTexParameteri(GL_TEXTURE_CUBE_MAP,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_NEAREST);
-				gluBuild2DMipmaps(g_face_target[loop], GL_RGB, g_cm_width, g_cm_height, GL_RGB, GL_UNSIGNED_BYTE, teximgs->GetSliceData(loop));
-		}
-
-		teximgs->Delete();
-	}
-
-	reader->Delete();
-	return success;
+    for (int loop = 0; loop < 6; ++loop)
+    {
+        GLsizei w, h;
+        if (!load_texture_from_file(w, h, g_cm_tex_files[loop], g_cm_texture_id, GL_TEXTURE_CUBE_MAP, g_face_target[loop], true)) return false;
+    }
+    //g_cm_width = w;
+    //g_cm_height = h;
+    return true;
 }
 
 bool load_textures()
 {
-	mitkBMPReader *reader = new mitkBMPReader();
-	reader->AddFileName("data/dyncubemap/BG.bmp");
-	reader->AddFileName("data/dyncubemap/Reflect.bmp");
+    glGenTextures(6, g_texture_id);
 
-	bool success = reader->Run();
-	if (success)
-	{
-		mitkVolume *teximgs = reader->GetOutput();
+    GLuint texIds[3];
+    GLsizei w, h;
+    texIds[0] = g_texture_id[0];
+    texIds[1] = g_texture_id[2];
+    texIds[2] = g_texture_id[4];
+    if (!load_texture_from_file(w, h, "data/dyncubemap/BG.bmp", texIds)) return false;
 
-		glGenTextures(6, g_texture_id);
-		for (int loop=0; loop<2; loop++)
-		{
-			// Create Nearest Filtered Texture
-			glBindTexture(GL_TEXTURE_2D, g_texture_id[loop]);	// Gen Tex 0 and 1
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, teximgs->GetWidth(), teximgs->GetHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, teximgs->GetSliceData(loop));
+    texIds[0] = g_texture_id[1];
+    texIds[1] = g_texture_id[3];
+    texIds[2] = g_texture_id[5];
+    if (!load_texture_from_file(w, h, "data/dyncubemap/Reflect.bmp", texIds)) return false;
 
-			// Create Linear Filtered Texture
-			glBindTexture(GL_TEXTURE_2D, g_texture_id[loop+2]);	// Gen Tex 2 and 3 4
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, teximgs->GetWidth(), teximgs->GetHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, teximgs->GetSliceData(loop));
+    return true;
+}
 
-			// Create MipMapped Texture
-			glBindTexture(GL_TEXTURE_2D, g_texture_id[loop+4]);	// Gen Tex 4 and 5
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_NEAREST);
-			gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, teximgs->GetWidth(), teximgs->GetHeight(), GL_RGB, GL_UNSIGNED_BYTE, teximgs->GetSliceData(loop));
-		}
+// load the first mesh from scene
+aiMesh const * get_first_mesh(aiNode *node, aiScene const *scene)
+{
+    if (node) {
+        if (node->mMeshes) {
+            return scene->mMeshes[node->mMeshes[0]];
+        } else {
+            for (unsigned int i = 0; i < node->mNumChildren; ++i) {
+                aiMesh const *mesh = get_first_mesh(node->mChildren[i], scene);
+                if (mesh) return mesh;
+            }
+        }
+    }
 
-		teximgs->Delete();
-	}
-
-	reader->Delete();
-	return success;
+    return nullptr;
 }
 
 bool load_model(char const *filename)
 {
-	mitkPLYReader *reader = new mitkPLYReader();
-	reader->AddFileName(filename);
+    g_ai_scene = aiImportFile(filename, aiProcess_Triangulate | aiProcess_JoinIdenticalVertices | aiProcess_GenSmoothNormals);
+    if (!g_ai_scene) {
+        std::cout << "Failed to load model from file " << filename << " (" << aiGetErrorString() << ")." << std::endl;
+        return false;
+    }
 
-	bool succ = reader->Run();
-	if (succ)
-	{
-		if (g_mesh)
-		{
-			g_mesh->Delete();
-			g_mesh = NULL;
-		}
-		g_mesh = reader->GetOutput();
+    aiMesh const *mesh = get_first_mesh(g_ai_scene->mRootNode, g_ai_scene);
+    if (!mesh) {
+        std::cout << "No mesh found in the scene of " << filename << "." << std::endl;
+        return false;
+    }
 
-		float const *box = g_mesh->GetBoundingBox();
-		float w = box[1] - box[0];
-		float h = box[3] - box[2];
-		float d = box[5] - box[4];
-		float wc = (box[1] + box[0]) * 0.5f;
-		float hc = (box[3] + box[2]) * 0.5f;
-		float dc = (box[5] + box[4]) * 0.5f;
-		float f = 2.0f * sqrt(3.0f) / sqrt(w*w + h*h + d*d);
-		
-		float *verts = g_mesh->GetVertexData();
-		for (unsigned int i=0; i<g_mesh->GetVertexNumber(); ++i, verts+=6)
-		{
-			verts[0] = (verts[0] - wc) * f;
-			verts[1] = (verts[1] - hc) * f;
-			verts[2] = (verts[2] - dc) * f;
-		}
+    assert(mesh->mNormals != 0);
+    for (unsigned int i = 0; i < mesh->mNumVertices; ++i) {
+        const aiVector3D &pos = mesh->mVertices[i];
+        g_triangle_mesh.vertices.push_back(pos.x);
+        g_triangle_mesh.vertices.push_back(pos.y);
+        g_triangle_mesh.vertices.push_back(pos.z);
 
-		g_mesh->ReverseNormals();
-	}
+        const aiVector3D &nrm = mesh->mNormals[i];
+        g_triangle_mesh.vertices.push_back(nrm.x);
+        g_triangle_mesh.vertices.push_back(nrm.y);
+        g_triangle_mesh.vertices.push_back(nrm.z);
+    }
 
-	reader->Delete();
+    for (unsigned int i = 0; i < mesh->mNumFaces; ++i) {
+        if (mesh->mFaces[i].mNumIndices != 3) continue; // ignore non-triangle face
+        g_triangle_mesh.indices.push_back(mesh->mFaces[i].mIndices[0]);
+        g_triangle_mesh.indices.push_back(mesh->mFaces[i].mIndices[1]);
+        g_triangle_mesh.indices.push_back(mesh->mFaces[i].mIndices[2]);
+    }
 	
-	return succ;
+	return true;
 }
 
 bool init()
@@ -493,14 +512,12 @@ bool init()
 	return true;
 }
 
-void draw_surface(mitkMesh *mesh)
+void draw_surface(TriangleMesh3D const &mesh)
 {
-	if (mesh == NULL) return;
-
-	unsigned int *facedata = mesh->GetFaceData();
-	float *vertdata = mesh->GetVertexData();
+    GLuint const *facedata = mesh.indices.data();
+    GLfloat const *vertdata = mesh.vertices.data();
 	glBegin(GL_TRIANGLES);
-		for (unsigned int i=0; i<mesh->GetFaceNumber(); ++i)
+		for (size_t i=0; i<mesh.indices.size()/3; ++i)
 		{
 			glNormal3fv(vertdata + 6*facedata[3*i] + 3);
 			glVertex3fv(vertdata + 6*facedata[3*i]);
@@ -514,14 +531,12 @@ void draw_surface(mitkMesh *mesh)
 	glEnd();
 }
 
-void draw_wireframe(mitkMesh *mesh)
+void draw_wireframe(TriangleMesh3D const &mesh)
 {
-	if (mesh == NULL) return;
-
-	unsigned int *facedata = mesh->GetFaceData();
-	float *vertdata = mesh->GetVertexData();
-	glBegin(GL_LINES);
-		for (unsigned int i=0; i<mesh->GetFaceNumber(); ++i)
+    GLuint const *facedata = mesh.indices.data();
+    GLfloat const *vertdata = mesh.vertices.data();
+    glBegin(GL_LINES);
+		for (unsigned int i=0; i<mesh.indices.size()/3; ++i)
 		{
 			glVertex3fv(&vertdata[6*facedata[3*i]]);
 			glVertex3fv(&vertdata[6*facedata[3*i+1]]);
@@ -570,8 +585,8 @@ void draw_something()
 
 	case 6:
 		//glScalef(10.0f, 10.0f, 10.0f);
-		if (g_wireframe) draw_wireframe(g_mesh);
-		else draw_surface(g_mesh);
+		if (g_wireframe) draw_wireframe(g_triangle_mesh);
+		else draw_surface(g_triangle_mesh);
 		break;
 
 	default:
@@ -988,7 +1003,7 @@ int main(int argc, char *argv[])
 	glutIdleFunc(display);
 	glutMainLoop();
 
-	if (g_mesh) g_mesh->Delete();
+	if (g_ai_scene) aiReleaseImport(g_ai_scene);
 
 	return 0;
 }

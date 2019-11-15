@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <stdio.h>
 #include <vector>
-#include "glinc.h"
+#include "glutinc.h"
 #include "matrix.h"
 #include "geotypes.h"
 #include "trackball.h"

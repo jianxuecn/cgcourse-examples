@@ -20,15 +20,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdlib.h>
-#include <GL/glut.h>
-#include <GL/glext.h>
+#include "glutinc.h"
+#include "glextinc.h"
 
 #include "trackball.h"
 #include "quaternion.h"
 #include "camera.h"
 
-#include "mitkJPEGReader.h"
-#include "mitkVolume.h"
+#include "FreeImage.h"
 
 GLuint g_texture_id[6];
 
@@ -69,45 +68,80 @@ void update_wrap()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, g_tex_wrap);
 }
 
+FIBITMAP* load_image(char const *filename, int flag = 0)
+{
+    FREE_IMAGE_FORMAT fif = FreeImage_GetFileType(filename, 0);
+
+    if (fif == FIF_UNKNOWN) fif = FreeImage_GetFIFFromFilename(filename);
+    if (fif == FIF_UNKNOWN) return false;
+
+    return FreeImage_Load(fif, filename, flag);
+}
+
+bool load_texture_from_file(char const *filename, GLuint texIds[3])
+{
+    FIBITMAP *tdib = load_image(filename);
+    if (!tdib) return false;
+
+    bool status(false);
+    unsigned int bpp = FreeImage_GetBPP(tdib);
+
+    FIBITMAP *dib = tdib;
+    if (bpp != 24) dib = FreeImage_ConvertTo24Bits(tdib);
+
+    BYTE *bits = FreeImage_GetBits(dib);
+    unsigned int width = FreeImage_GetWidth(dib);
+    unsigned int height = FreeImage_GetHeight(dib);
+
+    GLenum format = FREEIMAGE_COLORORDER == FREEIMAGE_COLORORDER_BGR ? GL_BGR : GL_RGB;
+
+    //RGBQUAD *pal = FreeImage_GetPalette(dib);
+
+    if (bits != 0 && width > 0 && height > 0) {
+        status = true;									// Set The Status To TRUE
+
+        // Create Nearest Filtered Texture
+        glBindTexture(GL_TEXTURE_2D, texIds[0]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, bits);
+
+        // Create Linear Filtered Texture
+        glBindTexture(GL_TEXTURE_2D, texIds[1]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, bits);
+
+        // Create MipMapped Texture
+        glBindTexture(GL_TEXTURE_2D, texIds[2]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, width, height, format, GL_UNSIGNED_BYTE, bits);
+    }
+
+    if (dib != tdib) FreeImage_Unload(dib);
+
+    FreeImage_Unload(tdib);
+
+    return status;
+}
 
 bool load_textures()
 {
-	mitkJPEGReader *reader = new mitkJPEGReader();
-	reader->AddFileName("data/spheremap/bg2.jpg");
-	reader->AddFileName("data/spheremap/reflect2.jpg");
+    glGenTextures(6, g_texture_id);
 
-	bool success = reader->Run();
-	if (success)
-	{
-		mitkVolume *teximgs = reader->GetOutput();
+    GLuint texIds[3];
+    texIds[0] = g_texture_id[0];
+    texIds[1] = g_texture_id[2];
+    texIds[2] = g_texture_id[4];
+    if (!load_texture_from_file("data/spheremap/bg2.jpg", texIds)) return false;
 
-		glGenTextures(6, g_texture_id);
-		for (int loop=0; loop<2; loop++)
-		{
-			// Create Nearest Filtered Texture
-			glBindTexture(GL_TEXTURE_2D, g_texture_id[loop]);
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, teximgs->GetWidth(), teximgs->GetHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, teximgs->GetSliceData(loop));
+    texIds[0] = g_texture_id[1];
+    texIds[1] = g_texture_id[3];
+    texIds[2] = g_texture_id[5];
+    if (!load_texture_from_file("data/spheremap/reflect2.jpg", texIds)) return false;
 
-			// Create Linear Filtered Texture
-			glBindTexture(GL_TEXTURE_2D, g_texture_id[loop+2]);
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, teximgs->GetWidth(), teximgs->GetHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, teximgs->GetSliceData(loop));
-
-			// Create MipMapped Texture
-			glBindTexture(GL_TEXTURE_2D, g_texture_id[loop+4]);
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
-			gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, teximgs->GetWidth(), teximgs->GetHeight(), GL_RGB, GL_UNSIGNED_BYTE, teximgs->GetSliceData(loop));
-		}
-
-		teximgs->Delete();
-	}
-
-	reader->Delete();
-	return success;
+	return true;
 }
 
 bool init()

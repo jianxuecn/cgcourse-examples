@@ -21,7 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "glinc.h"
+#include "glutinc.h"
+#include "glextinc.h"
 #include "FreeImage.h"
 
 int const MAX_TEXTURES = 3;
@@ -245,7 +246,7 @@ bool load_textures()
 		gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, width, height, format, GL_UNSIGNED_BYTE, bits);
 	}
 
-	if (bpp != 24) FreeImage_Unload(dib);
+	if (dib != tdib) FreeImage_Unload(dib);
 
     FreeImage_Unload(tdib);
 

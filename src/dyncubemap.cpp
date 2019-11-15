@@ -284,7 +284,12 @@ FIBITMAP* load_image(char const *filename, int flag = 0)
     if (fif == FIF_UNKNOWN) fif = FreeImage_GetFIFFromFilename(filename);
     if (fif == FIF_UNKNOWN) return false;
 
-    return FreeImage_Load(fif, filename, flag);
+	FIBITMAP *dib = FreeImage_Load(fif, filename, flag);
+	if (!dib) return nullptr;
+
+	//if (fif == FIF_BMP) FreeImage_FlipVertical(dib);
+
+    return dib;
 }
 
 bool load_texture_from_file(GLsizei &texWidth, GLsizei &texHeight, 
@@ -388,12 +393,12 @@ bool load_textures()
     texIds[0] = g_texture_id[0];
     texIds[1] = g_texture_id[2];
     texIds[2] = g_texture_id[4];
-    if (!load_texture_from_file(w, h, "data/dyncubemap/BG.bmp", texIds)) return false;
+    if (!load_texture_from_file(w, h, "data/dyncubemap/BG.bmp", texIds, GL_TEXTURE_2D, GL_TEXTURE_2D, true)) return false;
 
     texIds[0] = g_texture_id[1];
     texIds[1] = g_texture_id[3];
     texIds[2] = g_texture_id[5];
-    if (!load_texture_from_file(w, h, "data/dyncubemap/Reflect.bmp", texIds)) return false;
+    if (!load_texture_from_file(w, h, "data/dyncubemap/Reflect.bmp", texIds, GL_TEXTURE_2D, GL_TEXTURE_2D, true)) return false;
 
     return true;
 }

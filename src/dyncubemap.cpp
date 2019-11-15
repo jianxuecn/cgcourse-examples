@@ -53,6 +53,9 @@ struct TriangleMesh3D
 {
     std::vector<GLfloat> vertices;
     std::vector<GLuint> indices;
+    GLfloat bbox[6];
+    GLfloat center[3];
+    GLfloat scale;
 };
 
 char const *g_cm_tex_files[] = {
@@ -453,7 +456,36 @@ bool load_model(char const *filename)
         g_triangle_mesh.indices.push_back(mesh->mFaces[i].mIndices[1]);
         g_triangle_mesh.indices.push_back(mesh->mFaces[i].mIndices[2]);
     }
-	
+
+    // calculate bounding box, center and scale
+    GLfloat const *vertdata = g_triangle_mesh.vertices.data();
+    GLfloat *box = g_triangle_mesh.bbox;
+    for (size_t i = 0; i < g_triangle_mesh.vertices.size() / 6; ++i) {
+        GLfloat x = vertdata[6 * i];
+        GLfloat y = vertdata[6 * i + 1];
+        GLfloat z = vertdata[6 * i + 2];
+        if (i == 0) {
+            box[0] = box[1] = x;
+            box[2] = box[3] = y;
+            box[4] = box[5] = z;
+        } else {
+            if (x < box[0]) box[0] = x;
+            else if (x > box[1]) box[1] = x;
+            if (y < box[2]) box[2] = y;
+            else if (y > box[3]) box[3] = y;
+            if (z < box[4]) box[4] = z;
+            else if (z > box[5]) box[5] = z;
+        }
+    }
+
+    GLfloat w = box[1] - box[0];
+    GLfloat h = box[3] - box[2];
+    GLfloat d = box[5] - box[4];
+    g_triangle_mesh.center[0] = (box[1] + box[0]) * 0.5f;
+    g_triangle_mesh.center[1] = (box[3] + box[2]) * 0.5f;
+    g_triangle_mesh.center[2] = (box[5] + box[4]) * 0.5f;
+    g_triangle_mesh.scale = 2.0f * sqrt(3.0f) / sqrt(w * w + h * h + d * d);
+
 	return true;
 }
 
@@ -553,6 +585,16 @@ void draw_wireframe(TriangleMesh3D const &mesh)
 	glEnd();
 }
 
+void draw_mesh(TriangleMesh3D const &mesh)
+{
+    glPushMatrix();
+    glScalef(mesh.scale, mesh.scale, mesh.scale);
+    glTranslatef(-mesh.center[0], -mesh.center[1], -mesh.center[2]);
+    if (g_wireframe) draw_wireframe(mesh);
+    else draw_surface(mesh);
+    glPopMatrix();
+}
+
 void draw_something()
 {
 	switch (g_model)
@@ -590,8 +632,7 @@ void draw_something()
 
 	case 6:
 		//glScalef(10.0f, 10.0f, 10.0f);
-		if (g_wireframe) draw_wireframe(g_triangle_mesh);
-		else draw_surface(g_triangle_mesh);
+        draw_mesh(g_triangle_mesh);
 		break;
 
 	default:
@@ -897,7 +938,7 @@ void display()
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, g_texture_id[(g_filter<<1)+1]); // This Will Select The Sphere Map
     }
-
+    
     draw_something();
 
 	glPopMatrix();

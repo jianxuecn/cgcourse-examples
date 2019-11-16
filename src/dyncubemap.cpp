@@ -1,8 +1,8 @@
 /*
 -----------------------------------------------------------------------
 This source file is part of "cgcourse-examples"
-(Examples for Computer Graphics Course of CCCE GUCAS.)
-Copyright (C) 2011 Xue Jian (jian.xue.cn@gmail.com)
+(Examples for Computer Graphics Course of SES UCAS.)
+Copyright (C) 2019 Xue Jian (jian.xue.cn@gmail.com)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "assimp/scene.h"
 #include "assimp/postprocess.h"
 
+#if defined(_WIN32)
 PFNGLGENFRAMEBUFFERSPROC glGenFramebuffers;
 PFNGLBINDFRAMEBUFFERPROC glBindFramebuffer;
 PFNGLDELETEFRAMEBUFFERSPROC glDeleteFramebuffers;
@@ -48,6 +49,7 @@ PFNGLDELETERENDERBUFFERSPROC glDeleteRenderbuffers;
 PFNGLRENDERBUFFERSTORAGEPROC glRenderbufferStorage;
 
 PFNGLGENERATEMIPMAPEXTPROC glGenerateMipmap;
+#endif
 
 struct TriangleMesh3D
 {
@@ -182,6 +184,7 @@ bool init_extfuncs()
 {
     if (!is_extension_supported("GL_EXT_framebuffer_object")) return false;
 
+#if defined(_WIN32)
     glGenFramebuffers = (PFNGLGENFRAMEBUFFERSEXTPROC) wglGetProcAddress("glGenFramebuffersEXT");
     glBindFramebuffer = (PFNGLBINDFRAMEBUFFEREXTPROC) wglGetProcAddress("glBindFramebufferEXT");
     glDeleteFramebuffers = (PFNGLDELETEFRAMEBUFFERSPROC) wglGetProcAddress("glDeleteFramebuffersEXT");
@@ -222,6 +225,7 @@ bool init_extfuncs()
                   << "glGenerateMipmap:         " << glGenerateMipmap << std::endl;
         return false;
     }
+#endif
 
     return true;
 }
@@ -285,7 +289,7 @@ FIBITMAP* load_image(char const *filename, int flag = 0)
     FREE_IMAGE_FORMAT fif = FreeImage_GetFileType(filename, 0);
 
     if (fif == FIF_UNKNOWN) fif = FreeImage_GetFIFFromFilename(filename);
-    if (fif == FIF_UNKNOWN) return false;
+    if (fif == FIF_UNKNOWN) return nullptr;
 
 	FIBITMAP *dib = FreeImage_Load(fif, filename, flag);
 	if (!dib) return nullptr;
@@ -1037,7 +1041,7 @@ void keyboard(unsigned char key, int x, int y)
 int main(int argc, char *argv[])
 {
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);
 	glutInitWindowSize(512,512);
 	glutCreateWindow("Dynamic Cube Map");
 	if (!init()) return 1;

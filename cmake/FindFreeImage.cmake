@@ -18,11 +18,17 @@ ELSE (WIN32)
   IF (APPLE)
     # These values for Apple could probably do with improvement.
     FIND_PATH( FREEIMAGE_INCLUDE_DIR FreeImage.h
-      /System/Library/Frameworks/FreeImage.framework/Versions/A/Headers
+      #/System/Library/Frameworks/FreeImage.framework/Versions/A/Headers
       /usr/include
       /usr/local/include
       )
-    SET(FREEIMAGE_FreeImage_LIBRARY "-framework FreeImage" CACHE STRING "FreeImage library for OSX") 
+
+    FIND_LIBRARY( FREEIMAGE_FreeImage_LIBRARY NAMES FreeImage freeimage
+      /usr/lib
+      /usr/local/lib
+      )
+
+    #SET(FREEIMAGE_FreeImage_LIBRARY "-framework FreeImage" CACHE STRING "FreeImage library for OSX") 
   ELSE (APPLE)
     
     FIND_PATH( FREEIMAGE_INCLUDE_DIR FreeImage.h
@@ -37,11 +43,12 @@ ELSE (WIN32)
       /usr/lib
       /usr/openwin/lib
       )
-    SET (FREEIMAGE_FreeImage_LIBRARY_REL ${FREEIMAGE_FreeImage_LIBRARY} )
-    SET (FREEIMAGE_FreeImage_LIBRARY_DBG ${FREEIMAGE_FreeImage_LIBRARY} )
-     
+
   ENDIF (APPLE)
   
+  SET (FREEIMAGE_FreeImage_LIBRARY_REL ${FREEIMAGE_FreeImage_LIBRARY} )
+  SET (FREEIMAGE_FreeImage_LIBRARY_DBG ${FREEIMAGE_FreeImage_LIBRARY} )
+     
 ENDIF (WIN32)
 
 SET( FREEIMAGE_FOUND "NO" )

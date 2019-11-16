@@ -1,8 +1,8 @@
 /*
 -----------------------------------------------------------------------
 This source file is part of "cgcourse-examples"
-(Examples for Computer Graphics Course of CCCE GUCAS.)
-Copyright (C) 2011 Xue Jian (jian.xue.cn@gmail.com)
+(Examples for Computer Graphics Course of SES, UCAS.)
+Copyright (C) 2019 Xue Jian (jian.xue.cn@gmail.com)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -1,8 +1,8 @@
 /*
 -----------------------------------------------------------------------
 This source file is part of "cgcourse-examples"
-(Examples for Computer Graphics Course of CCCE GUCAS.)
-Copyright (C) 2011 Xue Jian (jian.xue.cn@gmail.com)
+(Examples for Computer Graphics Course of SES, UCAS.)
+Copyright (C) 2019 Xue Jian (jian.xue.cn@gmail.com)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -198,7 +198,7 @@ FIBITMAP* load_image(char const *filename, int flag = 0)
     FREE_IMAGE_FORMAT fif = FreeImage_GetFileType(filename, 0);
 
     if (fif == FIF_UNKNOWN) fif = FreeImage_GetFIFFromFilename(filename);
-    if (fif == FIF_UNKNOWN) return false;
+    if (fif == FIF_UNKNOWN) return nullptr;
 
 	return FreeImage_Load(fif, filename, flag);	
 }
@@ -615,7 +615,7 @@ void keyboard(unsigned char key, int x, int y)
     case 'o':
         {
             char filename[256];
-            memset(filename, 0, 256);
+            //memset(filename, 0, 256);
             static int i = 0;
             sprintf(filename, "snapshot_%d.png", i++);
             save_framebuffer(filename);

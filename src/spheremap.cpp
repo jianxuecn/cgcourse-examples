@@ -1,8 +1,8 @@
 /*
 -----------------------------------------------------------------------
 This source file is part of "cgcourse-examples"
-(Examples for Computer Graphics Course of CCCE GUCAS.)
-Copyright (C) 2011 Xue Jian (jian.xue.cn@gmail.com)
+(Examples for Computer Graphics Course of SES, UCAS.)
+Copyright (C) 2019 Xue Jian (jian.xue.cn@gmail.com)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@ FIBITMAP* load_image(char const *filename, int flag = 0)
     FREE_IMAGE_FORMAT fif = FreeImage_GetFileType(filename, 0);
 
     if (fif == FIF_UNKNOWN) fif = FreeImage_GetFIFFromFilename(filename);
-    if (fif == FIF_UNKNOWN) return false;
+    if (fif == FIF_UNKNOWN) return nullptr;
 
     return FreeImage_Load(fif, filename, flag);
 }
@@ -157,7 +157,7 @@ bool init()
 	g_rotm.IdentityMatrix();
 
 	glEnable(GL_NORMALIZE);
-	//glEnable(GL_AUTO_NORMAL);
+	glEnable(GL_AUTO_NORMAL);
 	glEnable(GL_TEXTURE_2D);							// Enable Texture Mapping
 	glShadeModel(GL_SMOOTH);							// Enable Smooth Shading
 	glClearColor(0.0f, 0.0f, 0.0f, 0.5f);				// Black Background
@@ -273,11 +273,11 @@ void display()
 	glEnable(GL_TEXTURE_GEN_S);							// Enable Texture Coord Generation For S (NEW)
 	glEnable(GL_TEXTURE_GEN_T);							// Enable Texture Coord Generation For T (NEW)
 
-	glMatrixMode(GL_TEXTURE);
-	glLoadIdentity();
-	glScalef(1.0f,-1.0f,1.0f);
-    glTranslatef(0, -1.0f, 0);
-	glMatrixMode(GL_MODELVIEW);
+	//glMatrixMode(GL_TEXTURE);
+	//glLoadIdentity();
+	//glScalef(1.0f,-1.0f,1.0f);
+    //glTranslatef(0, -1.0f, 0);
+	//glMatrixMode(GL_MODELVIEW);
 
 	glPushMatrix();
 
@@ -352,7 +352,7 @@ void keyboard(unsigned char key, int x, int y)
 int main(int argc, char **argv)
 {
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
+	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowSize(512,512);
 	glutCreateWindow("Sphere Map");
 

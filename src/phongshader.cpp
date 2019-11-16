@@ -1,8 +1,8 @@
 /*
 -----------------------------------------------------------------------
 This source file is part of "cgcourse-examples"
-(Examples for Computer Graphics Course of CCCE GUCAS.)
-Copyright (C) 2011 Xue Jian (jian.xue.cn@gmail.com)
+(Examples for Computer Graphics Course of SES, UCAS.)
+Copyright (C) 2019 Xue Jian (jian.xue.cn@gmail.com)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -22,7 +22,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <stdlib.h>
 
+// If fact, GLEW is also available in other platforms (eg. Linux, macOS, ...).
+// But it's usually useless for them if you don't use platform-specific
+// OpenGL features. So, here I only introduce GLEW for Windows platform
+// to demonstrate its usage.
+#if defined(_WIN32)
 #include "GL/glew.h"
+#endif
 #include "glutinc.h"
 
 #include "trackball.h"
@@ -154,9 +160,11 @@ bool link_program(GLuint program)
 
 bool init_shaders()
 {
+#if defined(_WIN32)
     if (!GLEW_VERSION_2_0) {
             return false;
     }
+#endif
 
     g_vert_shader = glCreateShader(GL_VERTEX_SHADER);
     g_frag_shader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -186,11 +194,13 @@ void clean_shaders()
 
 bool init()
 {
+#if defined(_WIN32)
     GLenum err = glewInit();
     if (err != GLEW_OK) {
         return false;
         printf("Error: %s\n", glewGetErrorString(err));
     }
+#endif
 
     if (!init_shaders()) return false;
 

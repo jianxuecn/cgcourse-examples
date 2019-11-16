@@ -1,7 +1,7 @@
 /*
 -----------------------------------------------------------------------
 This source file is part of "cgcourse-examples"
-(Examples for Computer Graphics Course of CCCE GUCAS.)
+(Examples for Computer Graphics Course of SES, UCAS.)
 
 MODIFIED FROM:
 CS330 - PROJECT 2

@@ -4,7 +4,7 @@ if(COMMAND CMAKE_POLICY)
   cmake_policy(SET CMP0048 NEW)
 endif(COMMAND CMAKE_POLICY)
 
-project(cg_examples VERSION 1.0.1)
+project(cg_examples VERSION 1.1.0)
 
 set(CMAKE_MODULE_PATH "${cg_examples_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 set(CMAKE_INSTALL_PREFIX "${cg_examples_BINARY_DIR}/dist" CACHE PATH "cg_examples install prefix" FORCE)

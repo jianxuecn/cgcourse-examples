@@ -14,10 +14,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(OpenGL REQUIRED)
 
-if(APPLE)
+find_package(FreeGLUT REQUIRED)
+
+if(FreeGLUT_NOTFOUND)
 find_package(GLUT REQUIRED)
 else()
-find_package(FreeGLUT REQUIRED)
 set(GLUT_LIBRARIES FreeGLUT::freeglut)
 endif()
 
